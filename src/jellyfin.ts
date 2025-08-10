@@ -20,7 +20,7 @@ export class JellyfinClient {
   }
 
   async listItems(params: Record<string, any>) {
-    const { data } = await this.http.get(`/Users/${this.userId}/Items`, { params });
+    const { data } = await this.http.get(`/Users/${encodeURIComponent(this.userId)}/Items`, { params });
     return data;
   }
 
@@ -42,12 +42,12 @@ export class JellyfinClient {
   }
 
   async item(itemId: string) {
-    const { data } = await this.http.get(`/Users/${this.userId}/Items/${itemId}`);
+    const { data } = await this.http.get(`/Users/${encodeURIComponent(this.userId)}/Items/${encodeURIComponent(itemId)}`);
     return data;
   }
 
   async streamInfo(itemId: string) {
-    const { data } = await this.http.get(`/Items/${itemId}/PlaybackInfo`, { params: { UserId: this.userId } });
+    const { data } = await this.http.get(`/Items/${encodeURIComponent(itemId)}/PlaybackInfo`, { params: { UserId: this.userId } });
     return data;
   }
 }
