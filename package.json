@@ -8,7 +8,9 @@
     "dev": "tsx src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "node --import tsx/esm src/test-runner.ts",
+    "test:server": "echo 'Testing MCP server compilation...' && node --import tsx/esm --check src/index.ts && echo 'MCP server compiles successfully!'"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.2",

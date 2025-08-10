@@ -15,7 +15,7 @@ export interface Recommendation {
 
 export function simpleRank(
   candidates: RankableItem[],
-  opts: { seed?: RankableItem; mood?: string }
+  opts: { seed?: RankableItem | undefined; mood?: string | undefined }
 ): Recommendation[] {
   const seed = opts.seed;
   const moodTokens = (opts.mood ?? "").toLowerCase().split(/\W+/).filter(Boolean);
