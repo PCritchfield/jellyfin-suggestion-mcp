@@ -1,0 +1,183 @@
+spec_version: 0.1
+name: jellyfin-mcp
+description: >
+  MCP server exposing Jellyfin library context and recommendation tools
+  for conversational media selection and playback handoff.
+
+limits:
+  max_results_default: 24
+  max_results_hard: 200
+
+resources:
+  - uri: jellyfin://snapshot
+    name: Library snapshot
+    description: Small, fast overview for conversational cold starts
+    mime_type: application/json
+
+tools:
+  - name: list_items
+    description: Filtered listing from the user’s library
+    input_schema:
+      type: object
+      properties:
+        view:
+          type: string
+          enum: [All, Movies, Shows, Episodes, Music]
+        filters: { $ref: "#/schemas/Filters" }
+        sort:
+          type: string
+          enum: [Random, CommunityRating, PremiereDate, PlayCount, DateCreated]
+        limit: { type: integer, minimum: 1, maximum: 200 }
+        cursor: { type: string }
+      required: [limit]
+    output_schema:
+      $ref: "#/schemas/ItemList"
+
+  - name: search_items
+    description: Search by text and/or structured filters
+    input_schema:
+      type: object
+      properties:
+        query: { type: string }
+        filters: { $ref: "#/schemas/Filters" }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        cursor: { type: string }
+    output_schema:
+      $ref: "#/schemas/ItemList"
+
+  - name: next_up
+    description: Personalized continuation for TV
+    input_schema:
+      type: object
+      properties:
+        series_id: { type: string }
+        limit: { type: integer, minimum: 1, maximum: 50 }
+    output_schema:
+      $ref: "#/schemas/ItemList"
+
+  - name: recommend_similar
+    description: Similar items with rationale strings
+    input_schema:
+      type: object
+      properties:
+        seed_item_id: { type: string }
+        mood: { type: string }
+        limit: { type: integer, minimum: 1, maximum: 50 }
+    output_schema:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            allOf:
+              - { $ref: "#/schemas/Item" }
+              - type: object
+                properties:
+                  score: { type: number }
+                  why: { type: array, items: { type: string } }
+
+  - name: get_stream_info
+    description: Playback capability data
+    input_schema:
+      type: object
+      properties:
+        item_id: { type: string }
+      required: [item_id]
+    output_schema:
+      type: object
+      properties:
+        can_direct_play: { type: boolean }
+        container: { type: string }
+
+schemas:
+  Filters:
+    type: object
+    properties:
+      include_item_types: { type: array, items: { type: string } }
+      genres: { type: array, items: { type: string } }
+      people: { type: array, items: { type: string } }
+      studios: { type: array, items: { type: string } }
+      year_range: { type: array, items: { type: integer }, minItems: 2, maxItems: 2 }
+      runtime_minutes: { type: array, items: { type: integer }, minItems: 2, maxItems: 2 }
+      kid_safe: { type: boolean }
+      text: { type: string }
+
+  Item:
+    type: object
+    properties:
+      Id: { type: string }
+      Name: { type: string }
+      Type: { type: string }
+      Overview: { type: string }
+      Genres: { type: array, items: { type: string } }
+      ProductionYear: { type: integer }
+      RunTimeTicks: { type: integer }
+      OfficialRating: { type: string }
+
+  ItemList:
+    type: object
+    properties:
+      items: { type: array, items: { $ref: "#/schemas/Item" } }
+      total: { type: integer }
+      next_cursor: { type: string }
+
+tests:
+  - name: search_90s_dark_comedy_under_2h
+    call: search_items
+    input:
+      query: null
+      filters:
+        include_item_types: [Movie]
+        genres: [Comedy]
+        text: "dark"
+        year_range: [1990, 1999]
+        runtime_minutes: [0, 120]
+      limit: 24
+    expect:
+      items.max_length: 24
+      items.each:
+        - field: Type
+          equals: "Movie"
+        - field: ProductionYear
+          between: [1990, 1999]
+
+  - name: kid_mode_blocks_mature_ratings
+    preconditions:
+      policy: kid_mode=true
+    call: list_items
+    input:
+      view: Movies
+      limit: 24
+    expect:
+      items.none:
+        - field: OfficialRating
+          in: ["R", "NC-17", "TV-MA"]
+
+  - name: over_limit_is_clamped_to_hard_cap
+    call: list_items
+    input:
+      view: All
+      limit: 999
+    expect:
+      items.max_length: 200
+
+  - name: next_up_returns_episodes
+    call: next_up
+    input:
+      limit: 5
+    expect:
+      items.max_length: 5
+      items.if_any:
+        - field: Type
+          equals: "Episode"
+
+  - name: recommend_with_mood_has_rationale
+    call: recommend_similar
+    input:
+      mood: "dark comedy 90s under 2 hours"
+      limit: 10
+    expect:
+      items.length: 10
+      items.each:
+        - field: why
+          min_length: 1
