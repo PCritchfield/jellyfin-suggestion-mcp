@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "jellyfin": {
+      "command": "node",
+      "args": [
+        "--import",
+        "tsx/esm",
+        "/REPLACE/WITH/FULL/PATH/TO/PROJECT/src/index.ts"
+      ],
+      "cwd": "/REPLACE/WITH/FULL/PATH/TO/PROJECT",
+      "env": {
+        "JELLYFIN_BASE_URL": "http://your-jellyfin-server:8096",
+        "JELLYFIN_USER_ID": "your-user-id-guid-here",
+        "JELLYFIN_TOKEN": "your-api-token-here"
+      }
+    }
+  }
+}
