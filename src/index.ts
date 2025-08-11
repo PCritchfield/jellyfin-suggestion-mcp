@@ -7,7 +7,6 @@ import {
   ListToolsRequestSchema,
   ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { z } from "zod";
 
 // Import our existing components
 import { JellyfinClient } from "./jellyfin.ts";
@@ -39,7 +38,7 @@ const jellyfinClient = new JellyfinClient({
 });
 
 // Load spec for tool definitions
-const spec = loadSpec();
+const _spec = loadSpec();
 
 // Create MCP server
 const server = new Server(

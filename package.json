@@ -9,10 +9,16 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "lint:json": "eslint . --format json",
     "test": "node --import tsx/esm src/test-runner.ts",
     "test:connection": "node --import tsx/esm src/test-connection.ts",
     "test:server": "echo 'Testing MCP server compilation...' && node --import tsx/esm --check src/index.ts && echo 'MCP server compiles successfully!'",
-    "get-users": "node --import tsx/esm src/get-users.ts"
+    "get-users": "node --import tsx/esm src/get-users.ts",
+    "security:audit": "npm audit --audit-level=moderate",
+    "security:audit-fix": "npm audit fix",
+    "type-check": "tsc --noEmit",
+    "ci": "npm run lint && npm run type-check && npm run build && npm run test"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.2",

@@ -1,0 +1,143 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  code-quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Needed for SonarCloud
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run ESLint with JSON output
+      run: npm run lint -- --format json --output-file eslint-report.json
+      continue-on-error: true
+      
+    - name: Run TypeScript compiler check
+      run: npx tsc --noEmit --pretty false
+      continue-on-error: true
+      
+    - name: Check for TODO/FIXME comments
+      run: |
+        echo "Checking for TODO/FIXME comments..."
+        if grep -r --include="*.ts" --include="*.js" --include="*.md" -n "TODO\|FIXME\|XXX\|HACK" src/ README.md SETUP.md SECURITY.md || true; then
+          echo "Found TODO/FIXME comments - consider addressing them"
+        else
+          echo "No TODO/FIXME comments found"
+        fi
+      
+    - name: Check for console.log statements
+      run: |
+        echo "Checking for console.log statements..."
+        if grep -r --include="*.ts" --include="*.js" -n "console\.log\|console\.debug" src/ || true; then
+          echo "Found console.log statements - consider using proper logging"
+          exit 1
+        else
+          echo "No console.log statements found"
+        fi
+      
+    - name: Check file sizes
+      run: |
+        echo "Checking for large files..."
+        find src/ -name "*.ts" -size +50k -exec echo "Large file found: {} (consider splitting)" \; || true
+        
+    - name: Check for unused dependencies
+      run: |
+        echo "Checking for unused dependencies..."
+        npx depcheck --ignores="@types/*,tsx,typescript,eslint,@eslint/*,typescript-eslint,globals" || true
+        
+    - name: Generate complexity report
+      run: |
+        echo "Generating complexity report..."
+        npx ts-node -e "
+        import { readFileSync, readdirSync } from 'fs';
+        import { join } from 'path';
+        
+        function analyzeComplexity(dir: string) {
+          const files = readdirSync(dir, { withFileTypes: true });
+          for (const file of files) {
+            if (file.isDirectory()) {
+              analyzeComplexity(join(dir, file.name));
+            } else if (file.name.endsWith('.ts')) {
+              const content = readFileSync(join(dir, file.name), 'utf8');
+              const lines = content.split('\n').length;
+              const functions = (content.match(/function|=>/g) || []).length;
+              if (lines > 200) {
+                console.log(\`Large file: \${join(dir, file.name)} (\${lines} lines)\`);
+              }
+              if (functions > 10) {
+                console.log(\`Complex file: \${join(dir, file.name)} (\${functions} functions)\`);
+              }
+            }
+          }
+        }
+        
+        analyzeComplexity('src');
+        " || echo "Complexity analysis completed"
+
+  documentation-check:
+    name: Documentation Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Check README exists and has content
+      run: |
+        if [ ! -f README.md ]; then
+          echo "README.md is missing"
+          exit 1
+        fi
+        if [ $(wc -l < README.md) -lt 10 ]; then
+          echo "README.md seems too short"
+          exit 1
+        fi
+        echo "README.md looks good"
+        
+    - name: Check for broken internal links
+      run: |
+        echo "Checking for broken internal links..."
+        for file in README.md SETUP.md SECURITY.md; do
+          if [ -f "$file" ]; then
+            echo "Checking $file..."
+            # Extract markdown links and check if referenced files exist
+            grep -o '\[.*\]([^)]*\.md)' "$file" | sed 's/.*(\([^)]*\)).*/\1/' | while read -r link; do
+              if [ ! -f "$link" ]; then
+                echo "Broken link in $file: $link"
+                exit 1
+              fi
+            done || true
+          fi
+        done
+        echo "Internal links check completed"
+        
+    - name: Check code examples in documentation
+      run: |
+        echo "Checking code examples in documentation..."
+        # Check if code blocks have proper language tags
+        for file in README.md SETUP.md SECURITY.md; do
+          if [ -f "$file" ]; then
+            if grep -n '^```$' "$file"; then
+              echo "Found code blocks without language specification in $file"
+              echo "Consider adding language tags like \`\`\`bash or \`\`\`json"
+            fi
+          fi
+        done || echo "Code examples check completed"

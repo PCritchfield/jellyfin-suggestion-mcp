@@ -1,74 +1,77 @@
-# Security Best Practices for Jellyfin MCP Server
+# Security Best Practices
 
-## 🔒 Protecting Sensitive Credentials
+> 📖 **See also:** [`README.md`](./README.md) for project overview | [`SETUP.md`](./SETUP.md) for setup instructions
 
-Your `.kilocode/mcp.json` file contains sensitive credentials that should **never** be committed to version control.
+## 🔒 Credential Management
 
-## ✅ Recommended Approaches
+Your Jellyfin credentials should **never** be committed to version control or shared publicly.
+
+## ✅ Secure Configuration Options
 
 ### Option 1: Environment Variables (Recommended)
-The MCP server already supports reading from environment variables. Set these in your shell:
+Set credentials in your shell environment:
 
 ```bash
 # Add to your ~/.bashrc, ~/.zshrc, or ~/.profile
-export JELLYFIN_BASE_URL="http://10.0.1.21:28096"
-export JELLYFIN_USER_ID= "your-user-id-here",
+export JELLYFIN_BASE_URL="http://your-jellyfin-server:8096"
+export JELLYFIN_USER_ID="your-user-id-here"
 export JELLYFIN_TOKEN="your-api-token-here"
 ```
 
-Then simplify your `.kilocode/mcp.json`:
+Then use a clean Claude Desktop config without embedded credentials:
 ```json
 {
   "mcpServers": {
     "jellyfin": {
       "command": "node",
-      "args": ["--import", "tsx/esm", "/home/critc/projects/github.com/PCritchfield/jellyfin-suggestion-mcp/src/index.ts"],
-      "cwd": "/home/critc/projects/github.com/PCritchfield/jellyfin-suggestion-mcp"
+      "args": ["--import", "tsx/esm", "/path/to/project/src/index.ts"],
+      "cwd": "/path/to/project"
     }
   }
 }
 ```
 
 ### Option 2: Local Configuration File
-Keep your current setup but rename the file:
+Keep credentials in a local-only config file:
 
 ```bash
-# Rename your current config
-mv .kilocode/mcp.json .kilocode/mcp.local.json
+# Rename your current config to prevent accidental commits
+mv claude_desktop_config.json claude_desktop_config.local.json
 
-# Copy the example for others
-cp .kilocode/mcp.example.json .kilocode/mcp.json
+# Use the example template for sharing
+cp claude_desktop_config.example.json claude_desktop_config.json
 ```
 
 ### Option 3: Separate Credentials File
-Create a separate credentials file:
+Create a gitignored credentials file:
 
 ```bash
-# Create credentials file (gitignored)
 echo '{
   "JELLYFIN_BASE_URL": "http://your-jellyfin-server:8096",
   "JELLYFIN_USER_ID": "your-user-id-here",
   "JELLYFIN_TOKEN": "your-api-token-here"
-}' > .kilocode/credentials.json
+}' > .credentials.json
 ```
 
-## 🛡️ Security Measures Implemented
+## 🛡️ Security Measures
 
-1. **✅ `.gitignore` Updated**: Added `.kilocode/mcp.json` and `.kilocode/mcp.local.json`
-2. **✅ Example Template**: Created `.kilocode/mcp.example.json` with placeholder values
-3. **✅ Environment Variable Support**: MCP server reads from `process.env`
+- **✅ Gitignore Protection**: Sensitive config files are excluded from version control
+- **✅ Example Templates**: Placeholder configs provided for safe sharing
+- **✅ Environment Variable Support**: Server reads from `process.env`
 
-## 🚨 Current Security Issues
+## 🚨 Security Considerations
 
-- **HIGH**: Your current `.kilocode/mcp.json` contains real credentials
-- **MEDIUM**: Jellyfin token has admin-level access to your media server
+- **Jellyfin API tokens** have broad access to your media server
+- **Network exposure** if Jellyfin is accessible outside your local network
+- **Credential storage** in Claude Desktop config files
 
-## 📋 Action Items
+## 📋 Security Checklist
 
-1. **Immediately**: Choose one of the secure approaches above
-2. **Remove sensitive data** from the current `mcp.json` file
-3. **Consider rotating** your Jellyfin API token for extra security
-4. **Test** that the MCP server still works with your chosen approach
+- [ ] Choose a secure credential management approach
+- [ ] Remove any hardcoded credentials from config files
+- [ ] Consider rotating your Jellyfin API token periodically
+- [ ] Verify your chosen approach works before committing changes
+- [ ] Review Jellyfin user permissions (consider a dedicated read-only user)
 
 ## 🔄 Token Rotation
 
@@ -78,8 +81,9 @@ To generate a new Jellyfin API token:
 3. Create a new token
 4. Update your secure configuration
 
-## 📝 Notes
+## 📝 Important Notes
 
-- The `.env` file approach won't work here since Claude Desktop doesn't load `.env` files
-- Environment variables are the most secure for local development
-- For production deployments, consider using a secrets management system
+- **Claude Desktop limitation**: `.env` files are not automatically loaded
+- **Environment variables**: Most secure for local development
+- **Production deployments**: Use proper secrets management systems
+- **Token scope**: Consider creating a dedicated Jellyfin user with minimal permissions
