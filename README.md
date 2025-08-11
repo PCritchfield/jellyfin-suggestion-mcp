@@ -13,12 +13,23 @@ It implements the contract defined in [`jellyfin-mcp.spec.yaml`](./jellyfin-mcp.
 
 ## Quick Start
 
-1. **Install dependencies**: `npm install`
+1. **Install dependencies**: `yarn install` or `task install`
 2. **Configure credentials**: Copy `.env.example` to `.env` and fill in your Jellyfin details
-3. **Test connection**: `npm run test:connection`
+3. **Test connection**: `yarn test:connection` or `task test:connection`
 4. **Follow setup guide**: See [`SETUP.md`](./SETUP.md) for complete configuration instructions
 
 > ⚠️ **Security Note**: See [`SECURITY.md`](./SECURITY.md) for credential management best practices
+
+### Using Task Runner
+
+This project uses [Task](https://taskfile.dev/) for streamlined development workflows:
+
+```bash
+task --list          # Show all available tasks
+task setup           # Complete project setup
+task dev             # Start development server
+task ci              # Run full CI pipeline locally
+```
 
 ## Documentation
 
@@ -55,25 +66,56 @@ npm run ci            # Run full CI pipeline locally
 
 ### Code Quality
 ```bash
-npm run lint          # Run ESLint
-npm run lint:fix      # Fix auto-fixable issues
-npm run type-check    # TypeScript type checking
-npm run security:audit # Security audit of dependencies
+yarn lint             # Run ESLint
+yarn lint:fix         # Fix auto-fixable issues
+yarn type-check       # TypeScript type checking
+yarn security:audit   # Security audit of dependencies
+
+# Or using Task
+task lint             # Run ESLint
+task lint:fix         # Fix auto-fixable issues
+task type-check       # TypeScript type checking
+task audit            # Security audit
 ```
 
 ### Building
 ```bash
-npm run build         # Compile TypeScript
-npm start            # Run compiled version
+yarn build            # Compile TypeScript
+yarn start            # Run compiled version
+
+# Or using Task
+task build            # Compile TypeScript
+task start            # Run production server
 ```
 
-## CI/CD
+## Development Workflow
 
-This project includes comprehensive GitHub workflows:
+This project follows professional development practices:
 
+### Package Management
+- **Yarn** as the primary package manager
+- Lockfile-based dependency management
+- Security auditing integrated into CI/CD
+
+### Code Quality
+- **ESLint** with TypeScript support
+- **Pre-commit hooks** for automated quality checks
+- **Conventional commits** for standardized commit messages
+- **Semantic release** for automated versioning
+
+### CI/CD Pipeline
 - **[CI Pipeline](.github/workflows/ci.yml)** - Linting, type checking, and testing
 - **[Code Quality](.github/workflows/code-quality.yml)** - Advanced code analysis and documentation checks
 - **[Security Scanning](.github/workflows/security.yml)** - Dependency vulnerabilities, secret scanning, and security analysis
+- **[Release Automation](.github/workflows/release.yml)** - Semantic release and automated publishing
 - **[Dependabot](.github/dependabot.yml)** - Automated dependency updates
 
-All workflows run on push/PR to `main` and `develop` branches. Security scans also run weekly.
+### Branching Strategy
+- **Trunk-based development** with `main` branch
+- All workflows run on push/PR to `main` branch
+- Security scans run weekly on schedule
+
+### Task Automation
+- **[Taskfile.yml](./Taskfile.yml)** provides consistent command interface
+- Organized tasks for development, testing, building, and maintenance
+- Run `task --list` to see all available commands
