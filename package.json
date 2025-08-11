@@ -18,7 +18,9 @@
     "security:audit": "yarn audit --level moderate",
     "security:audit-fix": "yarn audit --fix",
     "type-check": "tsc --noEmit",
-    "ci": "yarn lint && yarn type-check && yarn build && yarn test"
+    "ci": "yarn lint && yarn type-check && yarn build && yarn test",
+    "prepare": "husky install",
+    "pre-commit": "pre-commit run --all-files"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.2",
@@ -36,6 +38,8 @@
     "@types/node": "^24.2.1",
     "eslint": "^9.33.0",
     "globals": "^16.3.0",
+    "husky": "^8.0.3",
+    "pre-commit": "^1.2.2",
     "semantic-release": "^22.0.8",
     "tsx": "^4.20.3",
     "typescript": "^5.9.2",
