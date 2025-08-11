@@ -139,5 +139,4 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 # MCP configuration files with sensitive data
-.kilocode/mcp.json
-.kilocode/mcp.local.json
+.kilocode/
