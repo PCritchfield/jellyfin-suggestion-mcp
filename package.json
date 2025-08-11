@@ -13,7 +13,7 @@
     "lint:json": "eslint . --format json",
     "test": "node --import tsx/esm src/test-runner.ts",
     "test:connection": "node --import tsx/esm src/test-connection.ts",
-    "test:server": "echo 'Testing MCP server compilation...' && node --import tsx/esm --check src/index.ts && echo 'MCP server compiles successfully!'",
+    "test:server": "echo 'Testing MCP server compilation...' && yarn type-check && echo 'MCP server compiles successfully!'",
     "get-users": "node --import tsx/esm src/get-users.ts",
     "security:audit": "yarn audit --level moderate",
     "security:audit-fix": "yarn audit --fix",

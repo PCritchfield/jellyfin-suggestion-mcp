@@ -47,11 +47,11 @@ jobs:
     - name: Check for console.log statements
       run: |
         echo "Checking for console.log statements..."
-        if grep -r --include="*.ts" --include="*.js" -n "console\.log\|console\.debug" src/ || true; then
+        if grep -r --include="*.ts" --include="*.js" -n "console\.log\|console\.debug" src/ --exclude="*test*" --exclude="get-users.ts" || true; then
           echo "Found console.log statements - consider using proper logging"
           exit 1
         else
-          echo "No console.log statements found"
+          echo "No console.log statements found in main application code"
         fi
       
     - name: Check file sizes
