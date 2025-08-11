@@ -14,30 +14,32 @@ jobs:
   dependency-scan:
     name: Dependency Security Scan
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'yarn'
-        
+
     - name: Install dependencies
       run: yarn install --frozen-lockfile
-      
+
     - name: Run yarn audit
       run: |
         echo "Running yarn audit..."
         yarn audit --level moderate
-        
+
     - name: Check for known vulnerabilities with yarn audit
       run: |
         echo "Checking for high/critical vulnerabilities..."
-        if yarn audit --level high --json | jq -e '.data.vulnerabilities | length > 0' > /dev/null 2>&1; then
+        # Use yarn audit exit code directly - it exits with 1 if vulnerabilities are found
+        if ! yarn audit --level high > /dev/null 2>&1; then
           echo "High or critical vulnerabilities found!"
+          echo "Running detailed audit report:"
           yarn audit --level high
           exit 1
         else
@@ -47,13 +49,13 @@ jobs:
   secret-scan:
     name: Secret Scanning
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        
+
     - name: Run TruffleHog OSS
       uses: trufflesecurity/trufflehog@main
       with:
@@ -61,11 +63,11 @@ jobs:
         base: main
         head: HEAD
         extra_args: --debug --only-verified
-        
+
     - name: Check for hardcoded secrets
       run: |
         echo "Checking for potential hardcoded secrets..."
-        
+
         # Check for hardcoded secret patterns (excluding legitimate environment variable usage)
         if grep -r --include="*.ts" --include="*.js" --include="*.json" --include="*.md" -E \
           -e "password\s*=\s*['\"][^'\"]+['\"]" \
@@ -80,7 +82,7 @@ jobs:
         else
           echo "No hardcoded secrets found"
         fi
-        
+
         # Additional check for common hardcoded patterns
         echo "Checking for suspicious hardcoded values..."
         if grep -r --include="*.ts" --include="*.js" --include="*.json" -E \
@@ -93,11 +95,11 @@ jobs:
         else
           echo "No suspicious hardcoded values detected"
         fi
-        
+
     - name: Check for exposed credentials in config files
       run: |
         echo "Checking for exposed credentials in config files..."
-        
+
         # Check for real-looking values in config files
         find . -name "*.json" -not -path "./node_modules/*" -not -name "package*.json" | while read -r file; do
           if [ -f "$file" ]; then
@@ -113,33 +115,33 @@ jobs:
   code-security:
     name: Code Security Analysis
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'yarn'
-        
+
     - name: Install dependencies
       run: yarn install --frozen-lockfile
-      
+
     - name: Run ESLint security rules
       run: |
         echo "Running ESLint with security focus..."
         # Install security-focused ESLint plugins
         yarn add --dev eslint-plugin-security @typescript-eslint/eslint-plugin
-        
+
         # Create temporary security-focused ESLint config
         cat > .eslint-security.js << 'EOF'
         import js from "@eslint/js";
         import globals from "globals";
         import tseslint from "typescript-eslint";
         import security from "eslint-plugin-security";
-        
+
         export default tseslint.config(
           js.configs.recommended,
           ...tseslint.configs.recommended,
@@ -168,13 +170,13 @@ jobs:
           }
         );
         EOF
-        
+
         npx eslint -c .eslint-security.js src/ || echo "Security linting completed with warnings"
-        
+
     - name: Check for insecure dependencies
       run: |
         echo "Checking for known insecure packages..."
-        
+
         # Check if any dependencies are known to be insecure
         if command -v retire &> /dev/null; then
           retire --path . --outputformat json --outputpath retire-report.json || true
@@ -183,18 +185,18 @@ jobs:
           npm install -g retire
           retire --path . --outputformat json --outputpath retire-report.json || true
         fi
-        
+
     - name: Validate environment variable usage
       run: |
         echo "Checking environment variable usage..."
-        
+
         # Check that sensitive data is properly loaded from environment
         if grep -r --include="*.ts" --include="*.js" "process\.env\." src/; then
           echo "Environment variables are being used (good practice)"
         else
           echo "No environment variable usage found - ensure sensitive data is not hardcoded"
         fi
-        
+
         # Check for proper validation of environment variables
         if grep -r --include="*.ts" --include="*.js" -A 5 -B 5 "process\.env\." src/ | grep -E "(throw|error|undefined|null)"; then
           echo "Environment variable validation found (good practice)"
@@ -205,15 +207,15 @@ jobs:
   permissions-check:
     name: File Permissions Check
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Check file permissions
       run: |
         echo "Checking file permissions..."
-        
+
         # Check for executable files that shouldn't be executable
         find . -type f -executable -not -path "./node_modules/*" -not -path "./.git/*" | while read -r file; do
           if [[ "$file" != *.sh && "$file" != */bin/* ]]; then
@@ -221,7 +223,7 @@ jobs:
             ls -la "$file"
           fi
         done || echo "File permissions check completed"
-        
+
         # Check for world-writable files
         find . -type f -perm -002 -not -path "./node_modules/*" -not -path "./.git/*" | while read -r file; do
           echo "World-writable file found: $file"
