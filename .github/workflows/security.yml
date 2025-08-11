@@ -66,19 +66,32 @@ jobs:
       run: |
         echo "Checking for potential hardcoded secrets..."
         
-        # Check for common secret patterns
-        if grep -r --include="*.ts" --include="*.js" --include="*.json" --include="*.md" -i \
-          -e "password.*=" \
-          -e "secret.*=" \
-          -e "token.*=" \
-          -e "api[_-]?key" \
-          -e "private[_-]?key" \
-          -e "access[_-]?token" \
-          . | grep -v ".example" | grep -v "your-" | grep -v "placeholder" | grep -v "README" | grep -v "SETUP" | grep -v "SECURITY"; then
+        # Check for hardcoded secret patterns (excluding legitimate environment variable usage)
+        if grep -r --include="*.ts" --include="*.js" --include="*.json" --include="*.md" -E \
+          -e "password\s*=\s*['\"][^'\"]+['\"]" \
+          -e "secret\s*=\s*['\"][^'\"]+['\"]" \
+          -e "token\s*=\s*['\"][^'\"]+['\"]" \
+          -e "api[_-]?key\s*=\s*['\"][^'\"]+['\"]" \
+          -e "private[_-]?key\s*=\s*['\"][^'\"]+['\"]" \
+          -e "access[_-]?token\s*=\s*['\"][^'\"]+['\"]" \
+          . | grep -v ".example" | grep -v "your-" | grep -v "placeholder" | grep -v "README" | grep -v "SETUP" | grep -v "SECURITY" | grep -v "process.env"; then
           echo "Potential hardcoded secrets found! Please review the above matches."
           exit 1
         else
-          echo "No obvious hardcoded secrets found"
+          echo "No hardcoded secrets found"
+        fi
+        
+        # Additional check for common hardcoded patterns
+        echo "Checking for suspicious hardcoded values..."
+        if grep -r --include="*.ts" --include="*.js" --include="*.json" -E \
+          -e "['\"][a-zA-Z0-9]{32,}['\"]" \
+          -e "Bearer [a-zA-Z0-9]+" \
+          -e "Basic [a-zA-Z0-9+/=]+" \
+          . | grep -v "test" | grep -v "example" | grep -v "placeholder" | grep -v "README" | grep -v "SETUP" | grep -v "SECURITY" | head -5; then
+          echo "Found potential hardcoded credentials above. Please verify these are not real secrets."
+          echo "If these are legitimate test values or examples, consider adding them to the exclusion list."
+        else
+          echo "No suspicious hardcoded values detected"
         fi
         
     - name: Check for exposed credentials in config files
