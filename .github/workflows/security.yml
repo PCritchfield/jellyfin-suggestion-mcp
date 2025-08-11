@@ -2,9 +2,9 @@ name: Security
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
     types: [ opened, synchronize, reopened ]
   schedule:
     # Run security scans weekly on Sundays at 2 AM UTC
