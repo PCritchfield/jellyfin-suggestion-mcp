@@ -1,24 +1,43 @@
 # Jellyfin MCP Server Setup Guide
 
-This guide will help you run the Jellyfin MCP server and connect Claude Desktop to it.
+Complete step-by-step guide to set up and connect the Jellyfin MCP server with Claude Desktop.
+
+> 📖 **See also:** [`README.md`](./README.md) for project overview | [`SECURITY.md`](./SECURITY.md) for security best practices
 
 ## Prerequisites
 
-✅ **Already completed:**
 - Node.js v20+ installed
 - Jellyfin server running and accessible
-- Project dependencies installed (`npm install`)
+- Claude Desktop app installed
 
-## Step 1: Configure Environment
+## Step 1: Install & Configure
 
-1. **Update your `.env` file** with the correct user ID:
+1. **Clone and install:**
    ```bash
-   JELLYFIN_BASE_URL=http://10.0.1.21:28096
-   JELLYFIN_USER_ID= "your-user-id-here",
-   JELLYFIN_TOKEN="your-api-token-here"
+   git clone <your-repo-url>
+   cd jellyfin-mcp
+   npm install
    ```
 
-2. **Test the connection:**
+2. **Get your Jellyfin User ID:**
+   ```bash
+   npm run get-users
+   ```
+   Copy the ID for your user from the output.
+
+3. **Configure environment:**
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Update `.env` with your details:
+   ```bash
+   JELLYFIN_BASE_URL=http://your-jellyfin-server:8096
+   JELLYFIN_USER_ID=your-user-id-guid-here
+   JELLYFIN_TOKEN=your-api-token-here
+   ```
+
+4. **Test the connection:**
    ```bash
    npm run test:connection
    ```
@@ -46,20 +65,15 @@ Jellyfin MCP Server running on stdio
 
 ## Step 3: Configure Claude Desktop
 
-### Option A: Using Claude Desktop App
-
-1. **Install Claude Desktop** from https://claude.ai/download if you haven't already
-
-2. **Open Claude Desktop settings:**
+1. **Open Claude Desktop settings:**
    - On macOS: `Claude Desktop` → `Settings` → `Developer`
    - On Windows: Click the gear icon → `Developer`
 
-3. **Add MCP server configuration** to the `claude_desktop_config.json` file:
+2. **Edit the configuration file:**
+   - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
-   **macOS location:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-   **Windows location:** `%APPDATA%\Claude\claude_desktop_config.json`
-
-   Add this configuration:
+3. **Add the MCP server configuration:**
    ```json
    {
      "mcpServers": {
@@ -72,7 +86,7 @@ Jellyfin MCP Server running on stdio
          ],
          "cwd": "/full/path/to/your/project",
          "env": {
-           "JELLYFIN_BASE_URL": "http://10.0.1.21:28096",
+           "JELLYFIN_BASE_URL": "http://your-jellyfin-server:8096",
            "JELLYFIN_USER_ID": "your-user-id-here",
            "JELLYFIN_TOKEN": "your-api-token-here"
          }
@@ -81,15 +95,13 @@ Jellyfin MCP Server running on stdio
    }
    ```
 
-   **Replace `/full/path/to/your/project`** with your actual project path (e.g., `/home/critc/projects/github.com/PCritchfield/jellyfin-suggestion-mcp`)
+   > **Important:** Replace `/full/path/to/your/project` with your actual project path
+   >
+   > **Security:** See [`SECURITY.md`](./SECURITY.md) for secure credential management options
 
 4. **Restart Claude Desktop** completely (quit and reopen)
 
-5. **Verify connection:** In a new Claude conversation, you should see a small "🔧" icon indicating MCP tools are available
-
-### Option B: Using Claude Web (Alternative)
-
-If you prefer to use Claude in the browser, you can set up a local MCP proxy, but the Desktop app is recommended for the best experience.
+5. **Verify connection:** Look for the "🔧" icon in Claude conversations indicating MCP tools are available
 
 ## Step 4: Test the Integration
 
@@ -120,16 +132,6 @@ Once connected, try these example prompts with Claude:
 "Find movies with Tom Hanks from the 1990s in my collection."
 ```
 
-## Available Tools
-
-Claude will have access to these tools from your Jellyfin library:
-
-- **📚 Library Snapshot** - Quick overview of your collection
-- **🔍 Search Items** - Text and filter-based search
-- **📋 List Items** - Browse by category with filters
-- **📺 Next Up** - Continue watching TV shows
-- **🎯 Recommend Similar** - AI-powered recommendations
-- **🎬 Stream Info** - Playback capability information
 
 ## Troubleshooting
 

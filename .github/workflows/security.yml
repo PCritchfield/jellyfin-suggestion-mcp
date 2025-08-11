@@ -1,0 +1,215 @@
+name: Security
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run security scans weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+
+jobs:
+  dependency-scan:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run npm audit
+      run: |
+        echo "Running npm audit..."
+        npm audit --audit-level=moderate
+        
+    - name: Check for known vulnerabilities with npm audit
+      run: |
+        echo "Checking for high/critical vulnerabilities..."
+        if npm audit --audit-level=high --json | jq -e '.vulnerabilities | length > 0' > /dev/null 2>&1; then
+          echo "High or critical vulnerabilities found!"
+          npm audit --audit-level=high
+          exit 1
+        else
+          echo "No high or critical vulnerabilities found"
+        fi
+
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Run TruffleHog OSS
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: main
+        head: HEAD
+        extra_args: --debug --only-verified
+        
+    - name: Check for hardcoded secrets
+      run: |
+        echo "Checking for potential hardcoded secrets..."
+        
+        # Check for common secret patterns
+        if grep -r --include="*.ts" --include="*.js" --include="*.json" --include="*.md" -i \
+          -e "password.*=" \
+          -e "secret.*=" \
+          -e "token.*=" \
+          -e "api[_-]?key" \
+          -e "private[_-]?key" \
+          -e "access[_-]?token" \
+          . | grep -v ".example" | grep -v "your-" | grep -v "placeholder" | grep -v "README" | grep -v "SETUP" | grep -v "SECURITY"; then
+          echo "Potential hardcoded secrets found! Please review the above matches."
+          exit 1
+        else
+          echo "No obvious hardcoded secrets found"
+        fi
+        
+    - name: Check for exposed credentials in config files
+      run: |
+        echo "Checking for exposed credentials in config files..."
+        
+        # Check for real-looking values in config files
+        find . -name "*.json" -not -path "./node_modules/*" -not -name "package*.json" | while read -r file; do
+          if [ -f "$file" ]; then
+            echo "Checking $file..."
+            # Look for suspicious patterns that might be real credentials
+            if grep -E "(http://[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+|[a-f0-9]{32,}|[A-Za-z0-9+/]{40,})" "$file" | grep -v "example" | grep -v "placeholder"; then
+              echo "Potential real credentials found in $file"
+              echo "Please ensure this file is in .gitignore and remove any real credentials"
+            fi
+          fi
+        done || echo "Config file check completed"
+
+  code-security:
+    name: Code Security Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run ESLint security rules
+      run: |
+        echo "Running ESLint with security focus..."
+        # Install security-focused ESLint plugins
+        npm install --no-save eslint-plugin-security @typescript-eslint/eslint-plugin
+        
+        # Create temporary security-focused ESLint config
+        cat > .eslint-security.js << 'EOF'
+        import js from "@eslint/js";
+        import globals from "globals";
+        import tseslint from "typescript-eslint";
+        import security from "eslint-plugin-security";
+        
+        export default tseslint.config(
+          js.configs.recommended,
+          ...tseslint.configs.recommended,
+          security.configs.recommended,
+          {
+            files: ["**/*.{js,mjs,cjs,ts,mts,cts}"],
+            languageOptions: {
+              globals: {
+                ...globals.node
+              }
+            },
+            rules: {
+              "security/detect-object-injection": "error",
+              "security/detect-non-literal-regexp": "error",
+              "security/detect-unsafe-regex": "error",
+              "security/detect-buffer-noassert": "error",
+              "security/detect-child-process": "warn",
+              "security/detect-disable-mustache-escape": "error",
+              "security/detect-eval-with-expression": "error",
+              "security/detect-no-csrf-before-method-override": "error",
+              "security/detect-non-literal-fs-filename": "warn",
+              "security/detect-non-literal-require": "warn",
+              "security/detect-possible-timing-attacks": "warn",
+              "security/detect-pseudoRandomBytes": "error"
+            }
+          }
+        );
+        EOF
+        
+        npx eslint -c .eslint-security.js src/ || echo "Security linting completed with warnings"
+        
+    - name: Check for insecure dependencies
+      run: |
+        echo "Checking for known insecure packages..."
+        
+        # Check if any dependencies are known to be insecure
+        if command -v retire &> /dev/null; then
+          retire --path . --outputformat json --outputpath retire-report.json || true
+        else
+          echo "Installing retire.js for security scanning..."
+          npm install -g retire
+          retire --path . --outputformat json --outputpath retire-report.json || true
+        fi
+        
+    - name: Validate environment variable usage
+      run: |
+        echo "Checking environment variable usage..."
+        
+        # Check that sensitive data is properly loaded from environment
+        if grep -r --include="*.ts" --include="*.js" "process\.env\." src/; then
+          echo "Environment variables are being used (good practice)"
+        else
+          echo "No environment variable usage found - ensure sensitive data is not hardcoded"
+        fi
+        
+        # Check for proper validation of environment variables
+        if grep -r --include="*.ts" --include="*.js" -A 5 -B 5 "process\.env\." src/ | grep -E "(throw|error|undefined|null)"; then
+          echo "Environment variable validation found (good practice)"
+        else
+          echo "Consider adding validation for environment variables"
+        fi
+
+  permissions-check:
+    name: File Permissions Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Check file permissions
+      run: |
+        echo "Checking file permissions..."
+        
+        # Check for executable files that shouldn't be executable
+        find . -type f -executable -not -path "./node_modules/*" -not -path "./.git/*" | while read -r file; do
+          if [[ "$file" != *.sh && "$file" != */bin/* ]]; then
+            echo "Unexpected executable file: $file"
+            ls -la "$file"
+          fi
+        done || echo "File permissions check completed"
+        
+        # Check for world-writable files
+        find . -type f -perm -002 -not -path "./node_modules/*" -not -path "./.git/*" | while read -r file; do
+          echo "World-writable file found: $file"
+          ls -la "$file"
+        done || echo "World-writable files check completed"

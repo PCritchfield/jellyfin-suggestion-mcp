@@ -1,5 +1,4 @@
 import { loadSpec, getSpecSection } from "./spec.ts";
-import { JellyfinClient } from "./jellyfin.ts";
 
 export interface TestCase {
   name: string;
@@ -129,7 +128,7 @@ export class SpecTestHarness {
     console.log(`  🔧 Calling real MCP server for ${toolName}`);
     try {
       // Simulate MCP tool call request
-      const request = {
+      const _request = {
         method: "tools/call",
         params: {
           name: toolName,
@@ -156,12 +155,12 @@ export class SpecTestHarness {
   /**
    * Simulate MCP server call (this would be replaced with actual MCP protocol calls)
    */
-  private async simulateMCPCall(toolName: string, input: any): Promise<any> {
+  private async simulateMCPCall(_toolName: string, _input: any): Promise<any> {
     // For now, we'll directly call the tool handlers from our server
     // In a real implementation, this would go through the MCP protocol
     
     // Import the tool handlers dynamically
-    const serverModule = await import("./index.ts");
+    const _serverModule = await import("./index.ts");
     
     // For now, fall back to mock responses until we have proper MCP integration
     // This is a placeholder for future MCP protocol integration
@@ -377,7 +376,7 @@ class MockJellyfinClient {
     };
   }
 
-  mockGetStreamInfo(input: any): any {
+  mockGetStreamInfo(_input: any): any {
     return {
       can_direct_play: true,
       container: "mp4"
