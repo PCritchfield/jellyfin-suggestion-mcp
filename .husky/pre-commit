@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run linting
+echo "🔍 Running ESLint..."
+yarn lint
+
+# Run type checking
+echo "🔧 Running TypeScript type check..."
+yarn type-check
+
+# Check for trailing whitespace and other basic issues
+echo "🧹 Checking for trailing whitespace..."
+if git diff --cached --name-only | xargs grep -l "[[:space:]]$" 2>/dev/null; then
+  echo "❌ Found trailing whitespace. Please remove it."
+  exit 1
+fi
+
+echo "✅ Pre-commit checks passed!"

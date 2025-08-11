@@ -1,0 +1,182 @@
+version: '3'
+
+vars:
+  PROJECT_NAME: jellyfin-suggestion-mcp
+  NODE_VERSION: '20'
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  # Development tasks
+  dev:
+    desc: Start development server
+    cmds:
+      - yarn dev
+
+  install:
+    desc: Install dependencies
+    cmds:
+      - yarn install --frozen-lockfile
+
+  clean:
+    desc: Clean build artifacts and dependencies
+    cmds:
+      - rm -rf dist/
+      - rm -rf node_modules/
+      - rm -f yarn-error.log
+
+  # Build tasks
+  build:
+    desc: Build the project
+    cmds:
+      - yarn build
+
+  start:
+    desc: Start production server
+    deps: [build]
+    cmds:
+      - yarn start
+
+  # Testing tasks
+  test:
+    desc: Run all tests
+    cmds:
+      - yarn test
+
+  test:connection:
+    desc: Test Jellyfin connection
+    cmds:
+      - yarn test:connection
+
+  test:server:
+    desc: Test server compilation
+    cmds:
+      - yarn test:server
+
+  # Code quality tasks
+  lint:
+    desc: Run ESLint
+    cmds:
+      - yarn lint
+
+  lint:fix:
+    desc: Run ESLint with auto-fix
+    cmds:
+      - yarn lint:fix
+
+  type-check:
+    desc: Run TypeScript type checking
+    cmds:
+      - yarn type-check
+
+  format:
+    desc: Format code with pre-commit hooks
+    cmds:
+      - yarn pre-commit
+
+  # Security tasks
+  audit:
+    desc: Run security audit
+    cmds:
+      - yarn security:audit
+
+  audit:fix:
+    desc: Fix security vulnerabilities
+    cmds:
+      - yarn security:audit-fix
+
+  # CI/CD tasks
+  ci:
+    desc: Run full CI pipeline locally
+    cmds:
+      - yarn ci
+
+  pre-commit:
+    desc: Run pre-commit hooks on all files
+    cmds:
+      - pre-commit run --all-files
+
+  # Setup tasks
+  setup:
+    desc: Initial project setup
+    cmds:
+      - task: install
+      - task: setup:hooks
+      - task: setup:env
+
+  setup:hooks:
+    desc: Setup git hooks
+    cmds:
+      - pre-commit install
+      - pre-commit install --hook-type commit-msg
+
+  setup:env:
+    desc: Setup environment file
+    cmds:
+      - |
+        if [ ! -f .env ]; then
+          cp .env.example .env
+          echo "Created .env file from .env.example"
+          echo "Please update .env with your Jellyfin configuration"
+        else
+          echo ".env file already exists"
+        fi
+
+  # Utility tasks
+  get-users:
+    desc: Get Jellyfin users for configuration
+    cmds:
+      - yarn get-users
+
+  version:
+    desc: Show project version and environment info
+    cmds:
+      - echo "Project: {{.PROJECT_NAME}}"
+      - echo "Node version: $(node --version)"
+      - echo "Yarn version: $(yarn --version)"
+      - echo "Package version: $(node -p "require('./package.json').version")"
+
+  # Release tasks
+  release:
+    desc: Create a release (runs semantic-release)
+    cmds:
+      - yarn semantic-release
+
+  # Docker tasks (if needed in future)
+  docker:build:
+    desc: Build Docker image
+    cmds:
+      - docker build -t {{.PROJECT_NAME}}:latest .
+
+  docker:run:
+    desc: Run Docker container
+    cmds:
+      - docker run -p 3000:3000 {{.PROJECT_NAME}}:latest
+
+  # Documentation tasks
+  docs:
+    desc: Validate documentation
+    cmds:
+      - echo "Checking documentation..."
+      - |
+        for file in README.md SETUP.md SECURITY.md; do
+          if [ -f "$file" ]; then
+            echo "✓ $file exists"
+          else
+            echo "✗ $file missing"
+          fi
+        done
+
+  # Maintenance tasks
+  update:
+    desc: Update dependencies
+    cmds:
+      - yarn upgrade-interactive
+
+  outdated:
+    desc: Check for outdated dependencies
+    cmds:
+      - yarn outdated

@@ -1,0 +1,5 @@
+# This file is kept for reference but we now use Husky for git hooks
+# See .husky/ directory for actual hook implementations
+#
+# The pre-commit package had security vulnerabilities, so we migrated to Husky
+# which is more commonly used in professional Node.js projects
