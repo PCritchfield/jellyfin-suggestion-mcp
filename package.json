@@ -1,9 +1,21 @@
 {
   "name": "jellyfin-suggestion-mcp",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "jellyfin-suggestion-mcp": "./dist/cli.js"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE",
+    "jellyfin-mcp.spec.yaml"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "tsc -p tsconfig.json",
@@ -15,6 +27,7 @@
     "test:connection": "node --import tsx/esm src/test-connection.ts",
     "test:server": "echo 'Testing MCP server compilation...' && yarn type-check && echo 'MCP server compiles successfully!'",
     "get-users": "node --import tsx/esm src/get-users.ts",
+    "test:auth": "node --import tsx/esm src/test-auth-connection.ts",
     "security:audit": "yarn audit --level moderate",
     "security:audit-fix": "yarn audit --fix",
     "type-check": "tsc --noEmit",
