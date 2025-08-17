@@ -9,19 +9,24 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 
 // Import our existing components
-import { JellyfinClient } from "./jellyfin.ts";
-import { loadSpec } from "./spec.ts";
+import { JellyfinClient } from "./jellyfin.js";
+import { AuthenticationRequiredError } from "./auth.js";
+import { loadSpec } from "./spec.js";
 import {
   ListItemsInput,
   SearchItemsInput,
   NextUpInput,
   RecommendSimilarInput,
   GetStreamInfoInput,
-} from "./schema.ts";
-import { simpleRank } from "./ranker.ts";
-import { getLibrarySnapshot } from "./resources.ts";
+} from "./schema.js";
+import { simpleRank } from "./ranker.js";
+import { getLibrarySnapshot } from "./resources.js";
 
-// Helper function for environment variables
+// Helper function for environment variables (now optional)
+function getEnv(key: string): string | undefined {
+  return process.env[key];
+}
+
 function mustEnv(key: string): string {
   const value = process.env[key];
   if (!value) {
@@ -30,11 +35,15 @@ function mustEnv(key: string): string {
   return value;
 }
 
-// Initialize Jellyfin client
+// Initialize Jellyfin client with optional credentials
+const baseUrl = mustEnv("JELLYFIN_BASE_URL");
+const userId = getEnv("JELLYFIN_USER_ID");
+const token = getEnv("JELLYFIN_TOKEN");
+
 const jellyfinClient = new JellyfinClient({
-  baseUrl: mustEnv("JELLYFIN_BASE_URL"),
-  userId: mustEnv("JELLYFIN_USER_ID"),
-  token: mustEnv("JELLYFIN_TOKEN"),
+  baseUrl,
+  ...(userId && { userId }),
+  ...(token && { token }),
 });
 
 // Load spec for tool definitions
@@ -189,6 +198,30 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["item_id"],
         },
       },
+      {
+        name: "authenticate_user",
+        description: "Exchange username/password for a user-scoped access token and set it for this session.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            username: { type: "string" },
+            password: { type: "string" },
+          },
+          required: ["username", "password"],
+        },
+      },
+      {
+        name: "set_token",
+        description: "Set the active Jellyfin access token (and optional userId) for this MCP session.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            access_token: { type: "string" },
+            user_id: { type: "string" },
+          },
+          required: ["access_token"],
+        },
+      },
     ],
   };
 });
@@ -209,6 +242,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return await handleRecommendSimilar(args);
       case "get_stream_info":
         return await handleGetStreamInfo(args);
+      case "authenticate_user":
+        return await handleAuthenticateUser(args);
+      case "set_token":
+        return await handleSetToken(args);
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
@@ -217,171 +254,212 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
-// Tool handler implementations
+// Tool handler implementations with authentication guards
 async function handleListItems(args: any) {
-  const input = ListItemsInput.parse(args);
-  
-  // Transform MCP input to Jellyfin API parameters
-  const params: Record<string, any> = {
-    Recursive: true,
-    Limit: Math.min(input.limit, 200), // Enforce hard limit
-    SortBy: mapSortToJellyfin(input.sort),
-    SortOrder: "Descending",
-  };
-  
-  // Apply view filter
-  if (input.view !== "All") {
-    params.IncludeItemTypes = mapViewToItemTypes(input.view);
-  }
-  
-  // Apply filters
-  if (input.filters) {
-    applyFiltersToParams(params, input.filters);
-  }
-  
-  // Apply cursor for pagination
-  if (input.cursor) {
-    params.StartIndex = parseInt(input.cursor, 10) || 0;
-  }
-  
-  const response = await jellyfinClient.listItems(params);
-  
-  return {
-    content: [
-      {
-        type: "text",
-        text: JSON.stringify({
-          items: response.Items || [],
-          total: response.TotalRecordCount || 0,
-          next_cursor: response.Items && response.Items.length === input.limit ? 
-            String((params.StartIndex || 0) + input.limit) : undefined,
-        }, null, 2),
-      },
-    ],
-  };
-}
-
-async function handleSearchItems(args: any) {
-  const input = SearchItemsInput.parse(args);
-  
-  // For search, we'll use both search hints and filtered listing
-  let items: any[] = [];
-  
-  if (input.query) {
-    const searchResponse = await jellyfinClient.searchHints(input.query, input.limit);
-    items = searchResponse.SearchHints || [];
-  } else {
-    // If no query, fall back to filtered listing
+  try {
+    const input = ListItemsInput.parse(args);
+    
+    // Transform MCP input to Jellyfin API parameters
     const params: Record<string, any> = {
       Recursive: true,
-      Limit: Math.min(input.limit, 100),
+      Limit: Math.min(input.limit, 200), // Enforce hard limit
+      SortBy: mapSortToJellyfin(input.sort),
+      SortOrder: "Descending",
     };
     
+    // Apply view filter
+    if (input.view !== "All") {
+      params.IncludeItemTypes = mapViewToItemTypes(input.view);
+    }
+    
+    // Apply filters
     if (input.filters) {
       applyFiltersToParams(params, input.filters);
     }
     
+    // Apply cursor for pagination
+    if (input.cursor) {
+      params.StartIndex = parseInt(input.cursor, 10) || 0;
+    }
+    
     const response = await jellyfinClient.listItems(params);
-    items = response.Items || [];
+    
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            items: response.Items || [],
+            total: response.TotalRecordCount || 0,
+            next_cursor: response.Items && response.Items.length === input.limit ?
+              String((params.StartIndex || 0) + input.limit) : undefined,
+          }, null, 2),
+        },
+      ],
+    };
+  } catch (error) {
+    if (error instanceof AuthenticationRequiredError) {
+      // Store the pending request
+      jellyfinClient.getAuthManager().storePendingRequest("list_items", args);
+      throw new Error("Authentication required. Please use the authenticate_user tool to sign in, then your request will be automatically retried.");
+    }
+    throw error;
   }
-  
-  return {
-    content: [
-      {
-        type: "text",
-        text: JSON.stringify({
-          items: items.slice(0, input.limit),
-          total: items.length,
-          next_cursor: items.length > input.limit ? "next_page" : undefined,
-        }, null, 2),
-      },
-    ],
-  };
+}
+
+async function handleSearchItems(args: any) {
+  try {
+    const input = SearchItemsInput.parse(args);
+    
+    // For search, we'll use both search hints and filtered listing
+    let items: any[] = [];
+    
+    if (input.query) {
+      const searchResponse = await jellyfinClient.searchHints(input.query, input.limit);
+      items = searchResponse.SearchHints || [];
+    } else {
+      // If no query, fall back to filtered listing
+      const params: Record<string, any> = {
+        Recursive: true,
+        Limit: Math.min(input.limit, 100),
+      };
+      
+      if (input.filters) {
+        applyFiltersToParams(params, input.filters);
+      }
+      
+      const response = await jellyfinClient.listItems(params);
+      items = response.Items || [];
+    }
+    
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            items: items.slice(0, input.limit),
+            total: items.length,
+            next_cursor: items.length > input.limit ? "next_page" : undefined,
+          }, null, 2),
+        },
+      ],
+    };
+  } catch (error) {
+    if (error instanceof AuthenticationRequiredError) {
+      jellyfinClient.getAuthManager().storePendingRequest("search_items", args);
+      throw new Error("Authentication required. Please use the authenticate_user tool to sign in, then your request will be automatically retried.");
+    }
+    throw error;
+  }
 }
 
 async function handleNextUp(args: any) {
-  const input = NextUpInput.parse(args);
-  
-  const response = await jellyfinClient.nextUp(input.series_id, input.limit);
-  
-  return {
-    content: [
-      {
-        type: "text",
-        text: JSON.stringify({
-          items: response.Items || [],
-          total: response.TotalRecordCount || 0,
-        }, null, 2),
-      },
-    ],
-  };
+  try {
+    const input = NextUpInput.parse(args);
+    
+    const response = await jellyfinClient.nextUp(input.series_id, input.limit);
+    
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            items: response.Items || [],
+            total: response.TotalRecordCount || 0,
+          }, null, 2),
+        },
+      ],
+    };
+  } catch (error) {
+    if (error instanceof AuthenticationRequiredError) {
+      jellyfinClient.getAuthManager().storePendingRequest("next_up", args);
+      throw new Error("Authentication required. Please use the authenticate_user tool to sign in, then your request will be automatically retried.");
+    }
+    throw error;
+  }
 }
 
 async function handleRecommendSimilar(args: any) {
-  const input = RecommendSimilarInput.parse(args);
-  
-  let seedItem: any = null;
-  if (input.seed_item_id) {
-    seedItem = await jellyfinClient.item(input.seed_item_id);
-  }
-  
-  // Get candidate items from the library
-  const candidatesResponse = await jellyfinClient.listItems({
-    Recursive: true,
-    Limit: 200, // Get a good pool of candidates
-    IncludeItemTypes: "Movie,Series",
-  });
-  
-  const candidates = candidatesResponse.Items || [];
-  
-  // Use our ranking algorithm
-  const recommendations = simpleRank(candidates, {
-    seed: seedItem || undefined,
-    mood: input.mood || undefined,
-  });
-  
-  // Transform to expected format with rationale
-  const items = recommendations.slice(0, input.limit).map(rec => {
-    const item = candidates.find((c: any) => c.Id === rec.itemId);
+  try {
+    const input = RecommendSimilarInput.parse(args);
+    
+    let seedItem: any = null;
+    if (input.seed_item_id) {
+      seedItem = await jellyfinClient.item(input.seed_item_id);
+    }
+    
+    // Get candidate items from the library
+    const candidatesResponse = await jellyfinClient.listItems({
+      Recursive: true,
+      Limit: 200, // Get a good pool of candidates
+      IncludeItemTypes: "Movie,Series",
+    });
+    
+    const candidates = candidatesResponse.Items || [];
+    
+    // Use our ranking algorithm
+    const recommendations = simpleRank(candidates, {
+      seed: seedItem || undefined,
+      mood: input.mood || undefined,
+    });
+    
+    // Transform to expected format with rationale
+    const items = recommendations.slice(0, input.limit).map(rec => {
+      const item = candidates.find((c: any) => c.Id === rec.itemId);
+      return {
+        ...item,
+        score: rec.score,
+        why: rec.why,
+      };
+    });
+    
     return {
-      ...item,
-      score: rec.score,
-      why: rec.why,
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            items,
+          }, null, 2),
+        },
+      ],
     };
-  });
-  
-  return {
-    content: [
-      {
-        type: "text",
-        text: JSON.stringify({
-          items,
-        }, null, 2),
-      },
-    ],
-  };
+  } catch (error) {
+    if (error instanceof AuthenticationRequiredError) {
+      jellyfinClient.getAuthManager().storePendingRequest("recommend_similar", args);
+      throw new Error("Authentication required. Please use the authenticate_user tool to sign in, then your request will be automatically retried.");
+    }
+    throw error;
+  }
 }
 
 async function handleGetStreamInfo(args: any) {
-  const input = GetStreamInfoInput.parse(args);
-  
-  const streamInfo = await jellyfinClient.streamInfo(input.item_id);
-  
-  // Extract basic playback info
-  const canDirectPlay = streamInfo.MediaSources?.[0]?.SupportsDirectStream || false;
-  const container = streamInfo.MediaSources?.[0]?.Container || "unknown";
-  
-  return {
-    content: [
-      {
-        type: "text",
-        text: JSON.stringify({
-          can_direct_play: canDirectPlay,
-          container,
-        }, null, 2),
-      },
-    ],
-  };
+  try {
+    const input = GetStreamInfoInput.parse(args);
+    
+    const streamInfo = await jellyfinClient.streamInfo(input.item_id);
+    
+    // Extract basic playback info
+    const canDirectPlay = streamInfo.MediaSources?.[0]?.SupportsDirectStream || false;
+    const container = streamInfo.MediaSources?.[0]?.Container || "unknown";
+    
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            can_direct_play: canDirectPlay,
+            container,
+          }, null, 2),
+        },
+      ],
+    };
+  } catch (error) {
+    if (error instanceof AuthenticationRequiredError) {
+      jellyfinClient.getAuthManager().storePendingRequest("get_stream_info", args);
+      throw new Error("Authentication required. Please use the authenticate_user tool to sign in, then your request will be automatically retried.");
+    }
+    throw error;
+  }
 }
 
 // Helper functions
@@ -443,6 +521,157 @@ function applyFiltersToParams(params: Record<string, any>, filters: any) {
   }
 }
 
+// Authentication tool handlers
+async function handleAuthenticateUser(args: any) {
+  try {
+    const { username, password } = args;
+    
+    if (!username || !password) {
+      throw new Error("Username and password are required");
+    }
+
+    const authManager = jellyfinClient.getAuthManager();
+    const session = await authManager.authenticateUser(username, password);
+    
+    // Update the client's session
+    jellyfinClient.setSession(session);
+    
+    // Check if there's a pending request to retry
+    const pendingRequest = authManager.getPendingRequest();
+    if (pendingRequest) {
+      console.error(`🔄 Retrying original request: ${pendingRequest.toolName}`);
+      
+      // Retry the original request
+      try {
+        const retryResult = await retryPendingRequest(pendingRequest);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                ok: true,
+                user: {
+                  id: session.userId,
+                  name: session.userName || "Unknown",
+                },
+                access_token: session.accessToken,
+                retried_request: {
+                  tool: pendingRequest.toolName,
+                  result: retryResult,
+                },
+              }, null, 2),
+            },
+          ],
+        };
+      } catch (retryError) {
+        // Authentication succeeded but retry failed
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                ok: true,
+                user: {
+                  id: session.userId,
+                  name: session.userName || "Unknown",
+                },
+                access_token: session.accessToken,
+                retry_error: retryError instanceof Error ? retryError.message : String(retryError),
+              }, null, 2),
+            },
+          ],
+        };
+      }
+    }
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            ok: true,
+            user: {
+              id: session.userId,
+              name: session.userName || "Unknown",
+            },
+            access_token: session.accessToken,
+          }, null, 2),
+        },
+      ],
+    };
+  } catch (error) {
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            ok: false,
+            error: error instanceof Error ? error.message : String(error),
+          }, null, 2),
+        },
+      ],
+    };
+  }
+}
+
+async function handleSetToken(args: any) {
+  try {
+    const { access_token, user_id } = args;
+    
+    if (!access_token) {
+      throw new Error("Access token is required");
+    }
+
+    const authManager = jellyfinClient.getAuthManager();
+    const session = await authManager.setToken(access_token, user_id);
+    
+    // Update the client's session
+    jellyfinClient.setSession(session);
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            ok: true,
+            user_id: session.userId,
+          }, null, 2),
+        },
+      ],
+    };
+  } catch (error) {
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            ok: false,
+            error: error instanceof Error ? error.message : String(error),
+          }, null, 2),
+        },
+      ],
+    };
+  }
+}
+
+// Helper function to retry pending requests
+async function retryPendingRequest(pendingRequest: any) {
+  switch (pendingRequest.toolName) {
+    case "list_items":
+      return await handleListItems(pendingRequest.arguments);
+    case "search_items":
+      return await handleSearchItems(pendingRequest.arguments);
+    case "next_up":
+      return await handleNextUp(pendingRequest.arguments);
+    case "recommend_similar":
+      return await handleRecommendSimilar(pendingRequest.arguments);
+    case "get_stream_info":
+      return await handleGetStreamInfo(pendingRequest.arguments);
+    default:
+      throw new Error(`Cannot retry unknown tool: ${pendingRequest.toolName}`);
+  }
+}
+
 // Start the server
 async function main() {
   const transport = new StdioServerTransport();
@@ -469,4 +698,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   });
 }
 
-export { server };
+export { server, main };

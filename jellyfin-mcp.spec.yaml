@@ -181,3 +181,47 @@ tests:
       items.each:
         - field: why
           min_length: 1
+  - name: authenticate_user
+    description: Exchange username/password for a user-scoped access token and set it for this session.
+    input_schema:
+      type: object
+      properties:
+        username: { type: string }
+        password: { type: string }
+      required: [username, password]
+    output_schema:
+      type: object
+      properties:
+        ok: { type: boolean }
+        user:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+        access_token: { type: string }
+
+  - name: set_token
+    description: Set the active Jellyfin access token (and optional userId) for this MCP session.
+    input_schema:
+      type: object
+      properties:
+        access_token: { type: string }
+        user_id: { type: string }
+      required: [access_token]
+    output_schema:
+      type: object
+      properties:
+        ok: { type: boolean }
+        user_id: { type: string }
+policies:
+  auth:
+    - "Do not log usernames/passwords."
+    - "Do not expose tokens in error messages."
+    - "All subsequent tool calls run under the active user token."
+
+impl_notes:
+  distribution:
+    - "Package exposes CLI via npm 'bin' field: jellyfin-suggestion-mcp"
+    - "Intended launch in MCP clients via: npx jellyfin-suggestion-mcp@latest"
+  changelog:
+    - "Follow semver; bump major on breaking tool/schema changes"
