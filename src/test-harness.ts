@@ -1,4 +1,4 @@
-import { loadSpec, getSpecSection } from "./spec.ts";
+import { loadSpec, getSpecSection } from "./spec.js";
 
 export interface TestCase {
   name: string;
@@ -160,7 +160,7 @@ export class SpecTestHarness {
     // In a real implementation, this would go through the MCP protocol
     
     // Import the tool handlers dynamically
-    const _serverModule = await import("./index.ts");
+    const _serverModule = await import("./index.js");
     
     // For now, fall back to mock responses until we have proper MCP integration
     // This is a placeholder for future MCP protocol integration
