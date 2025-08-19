@@ -181,3 +181,36 @@ tests:
       items.each:
         - field: why
           min_length: 1
+
+  - name: authenticate_user
+    call: authenticate_user
+    input:
+      username: testuser
+      password: testpass
+    expect:
+      ok: true
+      user:
+        id: { type: string }
+        name: { type: string }
+      access_token: { type: string }
+
+  - name: set_token
+    call: set_token
+    input:
+      access_token: test_token_123
+      user_id: test_user_456
+    expect:
+      ok: true
+      user_id: test_user_456
+policies:
+  auth:
+    - "Do not log usernames/passwords."
+    - "Do not expose tokens in error messages."
+    - "All subsequent tool calls run under the active user token."
+
+impl_notes:
+  distribution:
+    - "Package exposes CLI via npm 'bin' field: jellyfin-suggestion-mcp"
+    - "Intended launch in MCP clients via: npx jellyfin-suggestion-mcp@latest"
+  changelog:
+    - "Follow semver; bump major on breaking tool/schema changes"

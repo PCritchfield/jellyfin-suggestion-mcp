@@ -1,4 +1,4 @@
-import { loadSpec, getSpecSection } from "./spec.ts";
+import { loadSpec, getSpecSection } from "./spec.js";
 
 export interface TestCase {
   name: string;
@@ -48,7 +48,7 @@ export class SpecTestHarness {
   async runTest(testCase: TestCase): Promise<TestResult> {
     try {
       console.log(`\n🧪 Running test: ${testCase.name}`);
-      
+
       // Apply preconditions if any
       if (testCase.preconditions?.policy) {
         this.applyPolicy(testCase.preconditions.policy);
@@ -56,10 +56,10 @@ export class SpecTestHarness {
 
       // Make the MCP call (this will be implemented when we have the server)
       const response = await this.callMCPTool(testCase.call, testCase.input);
-      
+
       // Validate the response against expectations
       const validationResult = this.validateResponse(response, testCase.expect);
-      
+
       return {
         name: testCase.name,
         passed: validationResult.passed,
@@ -81,25 +81,25 @@ export class SpecTestHarness {
   async runAllTests(): Promise<TestResult[]> {
     const testCases = this.getTestCases();
     const results: TestResult[] = [];
-    
+
     console.log(`\n🚀 Running ${testCases.length} spec tests...\n`);
-    
+
     for (const testCase of testCases) {
       const result = await this.runTest(testCase);
       results.push(result);
-      
+
       if (result.passed) {
         console.log(`✅ ${result.name}`);
       } else {
         console.log(`❌ ${result.name}: ${result.error}`);
       }
     }
-    
+
     const passed = results.filter(r => r.passed).length;
     const total = results.length;
-    
+
     console.log(`\n📊 Test Results: ${passed}/${total} passed`);
-    
+
     return results;
   }
 
@@ -123,7 +123,7 @@ export class SpecTestHarness {
       console.log(`  📝 Using mock response for ${toolName}`);
       return this.getMockResponse(toolName, input);
     }
-    
+
     // Call the actual MCP server
     console.log(`  🔧 Calling real MCP server for ${toolName}`);
     try {
@@ -135,16 +135,16 @@ export class SpecTestHarness {
           arguments: input,
         },
       };
-      
+
       // This would be the actual MCP call - for now we'll simulate it
       // In a real integration, this would go through the MCP protocol
       const response = await this.simulateMCPCall(toolName, input);
-      
+
       // Parse the response content
       if (response.content && response.content[0] && response.content[0].text) {
         return JSON.parse(response.content[0].text);
       }
-      
+
       throw new Error("Invalid MCP response format");
     } catch (error) {
       console.log(`  ⚠️  MCP server call failed, falling back to mock: ${error instanceof Error ? error.message : String(error)}`);
@@ -158,10 +158,10 @@ export class SpecTestHarness {
   private async simulateMCPCall(_toolName: string, _input: any): Promise<any> {
     // For now, we'll directly call the tool handlers from our server
     // In a real implementation, this would go through the MCP protocol
-    
+
     // Import the tool handlers dynamically
-    const _serverModule = await import("./index.ts");
-    
+    const _serverModule = await import("./index.js");
+
     // For now, fall back to mock responses until we have proper MCP integration
     // This is a placeholder for future MCP protocol integration
     throw new Error("Direct MCP server integration not yet implemented");
@@ -182,7 +182,7 @@ export class SpecTestHarness {
           };
         }
       }
-      
+
       return { passed: true };
     } catch (error) {
       return {
@@ -196,23 +196,50 @@ export class SpecTestHarness {
    * Validate a specific expectation
    */
   private validateExpectation(response: any, expectationKey: string, expectationValue: any): boolean {
+    // Handle special expectation types
     switch (expectationKey) {
       case 'items.max_length':
         return response.items && response.items.length <= expectationValue;
-      
+
       case 'items.length':
         return response.items && response.items.length === expectationValue;
-      
+
       case 'items.each':
         return this.validateItemsEach(response.items, expectationValue);
-      
+
       case 'items.none':
         return this.validateItemsNone(response.items, expectationValue);
-      
+
       case 'items.if_any':
         return this.validateItemsIfAny(response.items, expectationValue);
-      
+
       default:
+        // Handle general field expectations
+        if (typeof expectationValue === 'object' && expectationValue !== null) {
+          // If expectationValue is an object with a 'type' field, it's a type check
+          if ((expectationValue as any).type === 'string') {
+            return typeof response[expectationKey] === 'string';
+          }
+          // If expectationValue is a nested object, validate its fields recursively
+          if (response[expectationKey] && typeof response[expectationKey] === 'object') {
+            for (const [subKey, subValue] of Object.entries(expectationValue)) {
+              if (typeof subValue === 'object' && subValue !== null && (subValue as any).type === 'string') {
+                if (typeof response[expectationKey][subKey] !== 'string') {
+                  return false;
+                }
+              } else if (typeof subValue === 'object' && subValue !== null && (subValue as any).type === 'object') {
+                // Handle nested objects
+                if (!response[expectationKey][subKey] || typeof response[expectationKey][subKey] !== 'object') {
+                  return false;
+                }
+              }
+            }
+            return true;
+          }
+        } else {
+          // Simple value comparison
+          return response[expectationKey] === expectationValue;
+        }
         console.warn(`Unknown expectation type: ${expectationKey}`);
         return true;
     }
@@ -223,7 +250,7 @@ export class SpecTestHarness {
    */
   private validateItemsEach(items: any[], criteria: any[]): boolean {
     if (!items || !Array.isArray(items)) return false;
-    
+
     return items.every(item => {
       return criteria.every(criterion => {
         return this.validateCriterion(item, criterion);
@@ -236,7 +263,7 @@ export class SpecTestHarness {
    */
   private validateItemsNone(items: any[], criteria: any[]): boolean {
     if (!items || !Array.isArray(items)) return true;
-    
+
     return !items.some(item => {
       return criteria.every(criterion => {
         return this.validateCriterion(item, criterion);
@@ -249,7 +276,7 @@ export class SpecTestHarness {
    */
   private validateItemsIfAny(items: any[], criteria: any[]): boolean {
     if (!items || !Array.isArray(items) || items.length === 0) return true;
-    
+
     return items.some(item => {
       return criteria.every(criterion => {
         return this.validateCriterion(item, criterion);
@@ -263,24 +290,24 @@ export class SpecTestHarness {
   private validateCriterion(item: any, criterion: any): boolean {
     const field = criterion.field;
     const value = item[field];
-    
+
     if (criterion.equals !== undefined) {
       return value === criterion.equals;
     }
-    
+
     if (criterion.between !== undefined) {
       const [min, max] = criterion.between;
       return value >= min && value <= max;
     }
-    
+
     if (criterion.in !== undefined) {
       return criterion.in.includes(value);
     }
-    
+
     if (criterion.min_length !== undefined) {
       return Array.isArray(value) && value.length >= criterion.min_length;
     }
-    
+
     return false;
   }
 
@@ -312,6 +339,22 @@ export class SpecTestHarness {
         return this.mockJellyfin.mockRecommendSimilar(input);
       case 'get_stream_info':
         return this.mockJellyfin.mockGetStreamInfo(input);
+      case 'authenticate_user':
+        // Simulate a successful authentication response
+        return {
+          ok: true,
+          user: {
+            id: "mock_user_1",
+            name: "Mock User"
+          },
+          access_token: "mock_access_token_123"
+        };
+      case 'set_token':
+        // Simulate setting a token for the session
+        return {
+          ok: true,
+          user_id: input?.user_id || "mock_user_1"
+        };
       default:
         throw new Error(`Unknown tool: ${toolName}`);
     }
@@ -346,7 +389,7 @@ class MockJellyfinClient {
       { Id: "ep1", Name: "Episode 1", Type: "Episode", SeriesId: "series1" },
       { Id: "ep2", Name: "Episode 2", Type: "Episode", SeriesId: "series2" }
     ];
-    
+
     return {
       items: episodes.slice(0, input.limit || 10),
       total: episodes.length
@@ -357,7 +400,7 @@ class MockJellyfinClient {
     // Generate the requested number of recommendations
     const limit = input.limit || 10;
     const items = [];
-    
+
     for (let i = 0; i < limit; i++) {
       items.push({
         Id: `rec_${i}`,
@@ -370,7 +413,7 @@ class MockJellyfinClient {
         why: ["mood matches (1)", "genre match", "similar era"]
       });
     }
-    
+
     return {
       items: items
     };
@@ -410,18 +453,18 @@ class MockJellyfinClient {
       if (input.filters.include_item_types) {
         items = items.filter(item => input.filters.include_item_types.includes(item.Type));
       }
-      
+
       if (input.filters.year_range) {
         const [minYear, maxYear] = input.filters.year_range;
         items = items.filter(item => item.ProductionYear >= minYear && item.ProductionYear <= maxYear);
       }
-      
+
       if (input.filters.genres) {
         items = items.filter(item =>
           input.filters.genres.some((genre: string) => item.Genres.includes(genre))
         );
       }
-      
+
       if (input.filters.text) {
         // Simple text matching for "dark" comedy
         const searchText = input.filters.text.toLowerCase();
@@ -440,10 +483,10 @@ class MockJellyfinClient {
         Math.floor((input.filters.year_range[0] + input.filters.year_range[1]) / 2) :
         2000;
       const targetGenres = input.filters?.genres || ["Drama"];
-      
+
       for (let i = items.length; i < Math.min(input.limit * 2, 300); i++) {
         let year = targetYear;
-        
+
         // If we have year_range filter, ensure generated items stay within range
         if (input.filters?.year_range) {
           const [minYear, maxYear] = input.filters.year_range;
@@ -453,7 +496,7 @@ class MockJellyfinClient {
           const yearOffset = (i % 10) - 5; // Vary years around target
           year = targetYear + yearOffset;
         }
-        
+
         additionalItems.push({
           Id: `generated_${i}`,
           Name: `Generated Item ${i}`,

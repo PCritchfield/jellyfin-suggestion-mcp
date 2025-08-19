@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
 import "dotenv/config";
-import { SpecTestHarness } from "./test-harness.ts";
+import { SpecTestHarness } from "./test-harness.js";
 
 /**
  * Test runner for the Jellyfin MCP spec tests

@@ -1,8 +1,8 @@
 #!/usr/bin/env tsx
 
 import "dotenv/config";
-import { JellyfinClient } from "./jellyfin.ts";
-import { getLibrarySnapshot } from "./resources.ts";
+import { JellyfinClient } from "./jellyfin.js";
+import { getLibrarySnapshot } from "./resources.js";
 
 /**
  * Test connection to Jellyfin and basic functionality
