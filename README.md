@@ -13,12 +13,42 @@ It implements the contract defined in [`jellyfin-mcp.spec.yaml`](./jellyfin-mcp.
 
 ## Quick Start
 
+### Option 1: NPX (Recommended)
+
+Use the simplified configuration with interactive authentication:
+
+```json
+{
+  "mcpServers": {
+    "jellyfin": {
+      "command": "npx",
+      "args": ["-y", "jellyfin-suggestion-mcp@latest"],
+      "env": {
+        "JELLYFIN_BASE_URL": "http://your-jellyfin-server:8096"
+      }
+    }
+  }
+}
+```
+
+When you first use any tool, you'll be prompted to authenticate with your Jellyfin username and password.
+
+### Option 2: Local Development
+
 1. **Install dependencies**: `yarn install` or `task install`
 2. **Configure credentials**: Copy `.env.example` to `.env` and fill in your Jellyfin details
 3. **Test connection**: `yarn test:connection` or `task test:connection`
 4. **Follow setup guide**: See [`SETUP.md`](./SETUP.md) for complete configuration instructions
 
 > ⚠️ **Security Note**: See [`SECURITY.md`](./SECURITY.md) for credential management best practices
+
+### Authentication
+
+The server supports two authentication methods:
+- **Interactive Authentication** (new): Username/password authentication on first use
+- **Pre-configured Tokens** (existing): Environment variables with API tokens
+
+See [`AUTHENTICATION.md`](./AUTHENTICATION.md) for detailed authentication guide.
 
 ### Using Task Runner
 
@@ -35,18 +65,24 @@ task ci              # Run full CI pipeline locally
 
 - **[`README.md`](./README.md)** - Project overview and quick reference
 - **[`SETUP.md`](./SETUP.md)** - Complete step-by-step setup guide
+- **[`AUTHENTICATION.md`](./AUTHENTICATION.md)** - Authentication methods and troubleshooting
 - **[`SECURITY.md`](./SECURITY.md)** - Security best practices and credential management
 
 ## Available Tools
 
 Once connected to Claude Desktop, you'll have access to these Jellyfin tools:
 
+### Media Tools
 - **📚 Library Snapshot** - Quick overview of your collection
 - **🔍 Search Items** - Text and filter-based search
 - **📋 List Items** - Browse by category with filters
 - **📺 Next Up** - Continue watching TV shows
 - **🎯 Recommend Similar** - AI-powered recommendations
 - **🎬 Stream Info** - Playback capability information
+
+### Authentication Tools
+- **🔐 Authenticate User** - Sign in with username/password
+- **🎫 Set Token** - Use existing API token
 
 **Example prompts:**
 - *"Find me some good 90s comedies under 2 hours"*
@@ -60,6 +96,7 @@ Once connected to Claude Desktop, you'll have access to these Jellyfin tools:
 ```bash
 npm test              # Run spec tests
 npm run test:connection  # Test Jellyfin connection
+npm run test:auth     # Test authentication system
 npm run get-users     # List Jellyfin users
 npm run ci            # Run full CI pipeline locally
 ```

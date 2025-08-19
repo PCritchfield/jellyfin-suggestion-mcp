@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "jellyfin": {
+      "command": "npx",
+      "args": ["-y", "jellyfin-suggestion-mcp@latest"],
+      "env": {
+        "JELLYFIN_BASE_URL": "http://10.0.1.21:28096"
+      }
+    }
+  }
+}
