@@ -181,38 +181,27 @@ tests:
       items.each:
         - field: why
           min_length: 1
+
   - name: authenticate_user
-    description: Exchange username/password for a user-scoped access token and set it for this session.
-    input_schema:
-      type: object
-      properties:
-        username: { type: string }
-        password: { type: string }
-      required: [username, password]
-    output_schema:
-      type: object
-      properties:
-        ok: { type: boolean }
-        user:
-          type: object
-          properties:
-            id: { type: string }
-            name: { type: string }
-        access_token: { type: string }
+    call: authenticate_user
+    input:
+      username: testuser
+      password: testpass
+    expect:
+      ok: true
+      user:
+        id: { type: string }
+        name: { type: string }
+      access_token: { type: string }
 
   - name: set_token
-    description: Set the active Jellyfin access token (and optional userId) for this MCP session.
-    input_schema:
-      type: object
-      properties:
-        access_token: { type: string }
-        user_id: { type: string }
-      required: [access_token]
-    output_schema:
-      type: object
-      properties:
-        ok: { type: boolean }
-        user_id: { type: string }
+    call: set_token
+    input:
+      access_token: test_token_123
+      user_id: test_user_456
+    expect:
+      ok: true
+      user_id: test_user_456
 policies:
   auth:
     - "Do not log usernames/passwords."

@@ -196,6 +196,7 @@ export class SpecTestHarness {
    * Validate a specific expectation
    */
   private validateExpectation(response: any, expectationKey: string, expectationValue: any): boolean {
+    // Handle special expectation types
     switch (expectationKey) {
       case 'items.max_length':
         return response.items && response.items.length <= expectationValue;
@@ -213,6 +214,32 @@ export class SpecTestHarness {
         return this.validateItemsIfAny(response.items, expectationValue);
       
       default:
+        // Handle general field expectations
+        if (typeof expectationValue === 'object' && expectationValue !== null) {
+          // If expectationValue is an object with a 'type' field, it's a type check
+          if ((expectationValue as any).type === 'string') {
+            return typeof response[expectationKey] === 'string';
+          }
+          // If expectationValue is a nested object, validate its fields recursively
+          if (response[expectationKey] && typeof response[expectationKey] === 'object') {
+            for (const [subKey, subValue] of Object.entries(expectationValue)) {
+              if (typeof subValue === 'object' && subValue !== null && (subValue as any).type === 'string') {
+                if (typeof response[expectationKey][subKey] !== 'string') {
+                  return false;
+                }
+              } else if (typeof subValue === 'object' && subValue !== null && (subValue as any).type === 'object') {
+                // Handle nested objects
+                if (!response[expectationKey][subKey] || typeof response[expectationKey][subKey] !== 'object') {
+                  return false;
+                }
+              }
+            }
+            return true;
+          }
+        } else {
+          // Simple value comparison
+          return response[expectationKey] === expectationValue;
+        }
         console.warn(`Unknown expectation type: ${expectationKey}`);
         return true;
     }
@@ -312,6 +339,22 @@ export class SpecTestHarness {
         return this.mockJellyfin.mockRecommendSimilar(input);
       case 'get_stream_info':
         return this.mockJellyfin.mockGetStreamInfo(input);
+      case 'authenticate_user':
+        // Simulate a successful authentication response
+        return {
+          ok: true,
+          user: {
+            id: "mock_user_1",
+            name: "Mock User"
+          },
+          access_token: "mock_access_token_123"
+        };
+      case 'set_token':
+        // Simulate setting a token for the session
+        return {
+          ok: true,
+          user_id: input?.user_id || "mock_user_1"
+        };
       default:
         throw new Error(`Unknown tool: ${toolName}`);
     }
