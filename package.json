@@ -35,7 +35,7 @@
     "prepare": "husky install"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.17.2",
+    "@modelcontextprotocol/sdk": "^1.17.3",
     "axios": "^1.11.0",
     "dotenv": "^17.2.1",
     "yaml": "^2.8.1",
@@ -47,13 +47,13 @@
     "@eslint/js": "^9.33.0",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
-    "@types/node": "^24.2.1",
+    "@types/node": "^24.3.0",
     "eslint": "^9.33.0",
     "globals": "^16.3.0",
     "husky": "^8.0.3",
     "semantic-release": "^22.0.8",
-    "tsx": "^4.20.3",
+    "tsx": "^4.20.4",
     "typescript": "^5.9.2",
-    "typescript-eslint": "^8.39.0"
+    "typescript-eslint": "^8.40.0"
   }
 }
