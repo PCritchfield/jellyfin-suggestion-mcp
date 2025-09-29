@@ -162,7 +162,7 @@ tasks:
     cmds:
       - echo "Checking documentation..."
       - |
-        for file in README.md SETUP.md SECURITY.md; do
+        for file in README.md MIGRATION.md; do
           if [ -f "$file" ]; then
             echo "✓ $file exists"
           else

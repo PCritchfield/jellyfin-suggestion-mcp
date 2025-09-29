@@ -38,7 +38,7 @@ jobs:
     - name: Check for TODO/FIXME comments
       run: |
         echo "Checking for TODO/FIXME comments..."
-        if grep -r --include="*.ts" --include="*.js" --include="*.md" -n "TODO\|FIXME\|XXX\|HACK" src/ README.md SETUP.md SECURITY.md || true; then
+        if grep -r --include="*.ts" --include="*.js" --include="*.md" -n "TODO\|FIXME\|XXX\|HACK" src/ README.md MIGRATION.md || true; then
           echo "Found TODO/FIXME comments - consider addressing them"
         else
           echo "No TODO/FIXME comments found"
@@ -119,7 +119,7 @@ jobs:
     - name: Check for broken internal links
       run: |
         echo "Checking for broken internal links..."
-        for file in README.md SETUP.md SECURITY.md; do
+        for file in README.md MIGRATION.md; do
           if [ -f "$file" ]; then
             echo "Checking $file..."
             # Extract markdown links and check if referenced files exist
@@ -137,7 +137,7 @@ jobs:
       run: |
         echo "Checking code examples in documentation..."
         # Check if code blocks have proper language tags
-        for file in README.md SETUP.md SECURITY.md; do
+        for file in README.md MIGRATION.md; do
           if [ -f "$file" ]; then
             if grep -n '^```$' "$file"; then
               echo "Found code blocks without language specification in $file"
