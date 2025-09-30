@@ -22,7 +22,7 @@ It implements the contract defined in [`jellyfin-mcp.spec.yaml`](./jellyfin-mcp.
   - [Secure Configuration](#secure-configuration) - Security-conscious users
   - [Quick Troubleshooting](#quick-troubleshooting) - Common issues and solutions
 
-### 🔒 Security & Authentication  
+### 🔒 Security & Authentication
 - **[Security Best Practices](#-security-best-practices)** - Comprehensive security guidance
   - [Core Security Principles](#core-security-principles) - Critical security warnings
   - [Security Considerations & Threat Model](#-security-considerations--threat-model) - Risk assessment
@@ -31,7 +31,7 @@ It implements the contract defined in [`jellyfin-mcp.spec.yaml`](./jellyfin-mcp.
   - [Production Security](#-production-security) - Enterprise deployment guidance
   - [Security Monitoring](#-security-monitoring) - Threat detection and red flags
 
-### 🔧 Development & Contribution
+### 🔧 Development & Contribution Guide
 - **[Development & Contribution](#-development--contribution)** - Complete developer guide
   - [Quick Development Setup](#quick-development-setup) - Get started in 5 minutes
   - [Development Commands](#development-commands) - Testing, quality, building
@@ -43,7 +43,7 @@ It implements the contract defined in [`jellyfin-mcp.spec.yaml`](./jellyfin-mcp.
 
 ### 📚 Reference & Tools
 - **[Available Tools](#available-tools)** - Media and authentication tools
-- **[Documentation](#documentation)** - Additional documentation files
+- **[Documentation](#-documentation)** - Additional documentation files
 
 ---
 
@@ -51,8 +51,8 @@ It implements the contract defined in [`jellyfin-mcp.spec.yaml`](./jellyfin-mcp.
 
 ### Choose Your Path
 
-**🎈 Just Want to Try It?** → [NPX Installation](#npx-installation-recommended)  
-**🔧 Local Development?** → [Local Development Setup](#local-development-setup)  
+**🎈 Just Want to Try It?** → [NPX Installation](#npx-installation-recommended)
+**🔧 Local Development?** → [Local Development Setup](#local-development-setup)
 **🔒 Need Maximum Security?** → [Secure Configuration Guide](#secure-configuration)
 
 ---
@@ -69,6 +69,7 @@ It implements the contract defined in [`jellyfin-mcp.spec.yaml`](./jellyfin-mcp.
 **Setup (2 minutes):**
 
 1. **Add to Claude Desktop config** (`claude_desktop_config.json`):
+
    ```json
    {
      "mcpServers": {
@@ -86,17 +87,18 @@ It implements the contract defined in [`jellyfin-mcp.spec.yaml`](./jellyfin-mcp.
 2. **Restart Claude Desktop** completely
 
 3. **Test it works:** In a new Claude conversation, try:
-   ```
+
+   ```text
    "What's in my Jellyfin library?"
    ```
 
 4. **Authenticate when prompted:** The first time you use any tool, Claude will show:
-   ```
+
+   ```text
    Error: Authentication required. Please use the authenticate_user tool to sign in, then your request will be automatically retried.
    ```
-   
+
    Simply tell Claude: **"Please authenticate me"** and provide your Jellyfin credentials when asked.
-   
    **What happens next:**
    - Claude calls the `authenticate_user` tool with your username/password
    - The system generates a secure session token
@@ -119,6 +121,7 @@ It implements the contract defined in [`jellyfin-mcp.spec.yaml`](./jellyfin-mcp.
 **Perfect for:** Developers, contributors, customization, advanced configuration
 
 **Prerequisites:**
+
 - Node.js v20+ installed
 - Git installed
 - Jellyfin server running and accessible
@@ -127,6 +130,7 @@ It implements the contract defined in [`jellyfin-mcp.spec.yaml`](./jellyfin-mcp.
 **Setup (5 minutes):**
 
 1. **Clone and install:**
+
    ```bash
    git clone https://github.com/PCritchfield/jellyfin-suggestion-mcp.git
    cd jellyfin-suggestion-mcp
@@ -135,28 +139,32 @@ It implements the contract defined in [`jellyfin-mcp.spec.yaml`](./jellyfin-mcp.
    ```
 
 2. **Configure environment:**
+
    ```bash
    cp .env.example .env
    # Edit .env with your Jellyfin server details
    ```
-   
+
    **Choose your authentication method:**
-   
+
    **Option A: Interactive Authentication (Recommended)**
+
    ```env
    # .env file - minimal configuration
    JELLYFIN_BASE_URL=http://your-jellyfin-server:8096
    ```
+
    You'll authenticate with username/password when Claude asks.
-   
+
    **Option B: Pre-configured Token**
+
    ```env
    # .env file - token-based authentication
    JELLYFIN_BASE_URL=http://your-jellyfin-server:8096
    JELLYFIN_USER_ID=your-user-id-guid-here
    JELLYFIN_TOKEN=your-api-token-here
    ```
-   
+
    **How to get API tokens:**
    1. Run `yarn get-users` to find your User ID
    2. Go to Jellyfin Dashboard → API Keys
@@ -164,20 +172,23 @@ It implements the contract defined in [`jellyfin-mcp.spec.yaml`](./jellyfin-mcp.
    4. Copy the token to your `.env` file
 
 3. **Test connection:**
+
    ```bash
    yarn test:connection
    # OR: task test:connection
    ```
-   
+
    Expected output: `✅ Jellyfin connection successful!`
-   
+
    **Authentication testing:**
+
    ```bash
    yarn test:auth
    # Verifies both interactive and token-based authentication
    ```
 
 4. **Add to Claude Desktop config:**
+
    ```json
    {
      "mcpServers": {
@@ -196,6 +207,7 @@ It implements the contract defined in [`jellyfin-mcp.spec.yaml`](./jellyfin-mcp.
 5. **Restart Claude Desktop** and test with: `"What's in my Jellyfin library?"`
 
 **🛠️ Development commands:**
+
 ```bash
 task --list          # Show all available tasks
 task dev             # Start development server with hot reload
@@ -214,6 +226,7 @@ Choose your preferred security approach:
 **🔐 Environment Variables (Recommended):**
 
 *For token-based authentication:*
+
 ```bash
 # Add to your shell profile (.bashrc, .zshrc, etc.)
 export JELLYFIN_BASE_URL="http://your-jellyfin-server:8096"
@@ -222,6 +235,7 @@ export JELLYFIN_TOKEN="your-api-token-here"
 ```
 
 *For interactive authentication:*
+
 ```bash
 # Minimal environment setup
 export JELLYFIN_BASE_URL="http://your-jellyfin-server:8096"
@@ -229,6 +243,7 @@ export JELLYFIN_BASE_URL="http://your-jellyfin-server:8096"
 ```
 
 Then use a clean Claude config without embedded credentials:
+
 ```json
 {
   "mcpServers": {
@@ -241,6 +256,7 @@ Then use a clean Claude config without embedded credentials:
 ```
 
 **📁 Local Config File:**
+
 ```bash
 # Keep sensitive config separate from shared files
 cp claude_desktop_config.json claude_desktop_config.local.json
@@ -250,27 +266,31 @@ cp claude_desktop_config.json claude_desktop_config.local.json
 **🔄 Authentication Method Migration:**
 
 *From token-based to interactive:*
+
 - Remove `JELLYFIN_USER_ID` and `JELLYFIN_TOKEN` from environment
 - Keep only `JELLYFIN_BASE_URL`
 - Next Claude conversation will prompt for username/password
 
 *From interactive to token-based:*
+
 - Get API token from Jellyfin Dashboard → API Keys
 - Add `JELLYFIN_USER_ID` and `JELLYFIN_TOKEN` to environment
 - Restart Claude Desktop
 
 **🔑 API Token Setup:**
+
 1. Go to Jellyfin Dashboard → API Keys
 2. Create new API key for this application
 3. Use token-based authentication instead of interactive
 
-> 💡 **Want more security options?** See [Complete Security Guide](#security-best-practices) below
+> 💡 **Want more security options?** See [Complete Security Guide](#-security-best-practices) below
 
 ---
 
 ### Quick Troubleshooting
 
 **Server won't start?**
+
 ```bash
 # Check for errors
 yarn build
@@ -278,6 +298,7 @@ yarn test:connection
 ```
 
 **Claude can't connect?**
+
 1. Verify server is running (`yarn dev` or `npx` process)
 2. Check file paths in `claude_desktop_config.json` are absolute and correct
 3. Restart Claude Desktop completely
@@ -286,36 +307,43 @@ yarn test:connection
 **Authentication failing?**
 
 *Connection Issues:*
-```
+
+``` shell
 Cannot connect to Jellyfin server at http://...
 ```
+
 - Verify the `JELLYFIN_BASE_URL` is correct and accessible
 - Check that Jellyfin server is running and reachable
 - Ensure firewall/network settings allow access
 
 *Interactive Authentication Problems:*
-```
+
+``` shell
 Invalid username or password
 ```
+
 - Verify your Jellyfin credentials are correct
 - Check that the user account is enabled in Jellyfin
 - Ensure the user has permission to sign in
 
 *Token Authentication Issues:*
-```
+
+``` shell
 Invalid or expired token
 ```
+
 - Re-authenticate using interactive method
 - Check that the API token hasn't been revoked in Jellyfin Dashboard
 - Verify `JELLYFIN_USER_ID` matches the token owner
 
 **Test your authentication:**
+
 ```bash
 yarn test:auth  # Tests both interactive and token-based auth
 yarn test:connection  # Basic connection test
 ```
 
-**Still stuck?** See [Complete Troubleshooting Guide](#troubleshooting) or [open an issue](https://github.com/PCritchfield/jellyfin-suggestion-mcp/issues).
+**Still stuck?** See [Quick Troubleshooting](#quick-troubleshooting) above or [open an issue](https://github.com/PCritchfield/jellyfin-suggestion-mcp/issues).
 
 [↑ Back to Top](#-table-of-contents)
 
@@ -328,8 +356,9 @@ yarn test:connection  # Basic connection test
 > **⚠️ CRITICAL:** Your Jellyfin credentials should **never** be committed to version control or shared publicly.
 
 **🛡️ Implemented Security Measures:**
+
 - **Gitignore Protection** - Sensitive config files excluded from version control
-- **Example Templates** - Placeholder configs provided for safe sharing  
+- **Example Templates** - Placeholder configs provided for safe sharing
 - **Environment Variable Support** - Server reads credentials from secure environment
 - **Session Management** - Credentials stored in memory only during Claude conversations
 - **No Credential Logging** - Usernames, passwords, and tokens are never logged
@@ -337,16 +366,19 @@ yarn test:connection  # Basic connection test
 ### 🚨 Security Considerations & Threat Model
 
 **API Token Scope:**
+
 - Jellyfin API tokens have **broad access** to your media server
 - Consider creating a **dedicated read-only user** for this application
 - Tokens can access all media and user data within granted permissions
 
 **Network Exposure:**
+
 - Risk increases if Jellyfin is accessible outside your local network
 - Ensure proper firewall configuration if exposing Jellyfin externally
 - Consider VPN access instead of direct internet exposure
 
 **Credential Storage:**
+
 - Claude Desktop config files may contain sensitive information
 - Environment variables are more secure than embedded credentials
 - Local config files should be properly protected with file permissions
@@ -367,12 +399,14 @@ Complete this checklist for secure deployment:
 ### 🔄 Token Management
 
 **Creating Secure API Tokens:**
+
 1. **Create Dedicated User**: Consider a read-only user for MCP access
 2. **Generate Token**: Jellyfin Dashboard → API Keys → Create new key
 3. **Secure Storage**: Store in environment variables, not config files
 4. **Regular Rotation**: Rotate tokens periodically (recommended: quarterly)
 
 **Token Rotation Process:**
+
 1. Generate new token in Jellyfin Dashboard
 2. Update environment variables or secure config
 3. Test new token with `yarn test:auth`
@@ -382,6 +416,7 @@ Complete this checklist for secure deployment:
 ### 🏭 Production Security
 
 **For Production Deployments:**
+
 - Use proper **secrets management systems** (HashiCorp Vault, AWS Secrets Manager, etc.)
 - Implement **token rotation automation**
 - Enable **audit logging** for credential access
@@ -389,6 +424,7 @@ Complete this checklist for secure deployment:
 - Implement **network segmentation** for media server access
 
 **Environment-Specific Considerations:**
+
 - **Development**: Environment variables in shell profile
 - **CI/CD**: Encrypted environment variables or secrets
 - **Production**: Enterprise secrets management with rotation
@@ -397,18 +433,20 @@ Complete this checklist for secure deployment:
 ### 🔍 Security Monitoring
 
 **What to Monitor:**
+
 - Failed authentication attempts
-- Unusual API usage patterns  
+- Unusual API usage patterns
 - Token usage from unexpected sources
 - Network connections to Jellyfin server
 
 **Red Flags:**
+
 - Multiple authentication failures
 - API calls outside normal usage patterns
 - Connections from unexpected IP addresses
 - Tokens being used simultaneously from different locations
 
-> 💡 **Security Questions?** Review the complete [threat model](#security-considerations--threat-model) above or [open a security issue](https://github.com/PCritchfield/jellyfin-suggestion-mcp/security) for guidance.
+> 💡 **Security Questions?** Review the complete [threat model](#-security-considerations--threat-model) above or [open a security issue](https://github.com/PCritchfield/jellyfin-suggestion-mcp/security) for guidance.
 
 [↑ Back to Top](#-table-of-contents)
 
@@ -419,6 +457,7 @@ Complete this checklist for secure deployment:
 Once connected to Claude Desktop, you'll have access to these Jellyfin tools:
 
 ### Media Tools
+
 - **📚 Library Snapshot** - Quick overview of your collection
 - **🔍 Search Items** - Text and filter-based search
 - **📋 List Items** - Browse by category with filters
@@ -427,10 +466,12 @@ Once connected to Claude Desktop, you'll have access to these Jellyfin tools:
 - **🎬 Stream Info** - Playback capability information
 
 ### Authentication Tools
+
 - **🔐 Authenticate User** - Sign in with username/password
 - **🎫 Set Token** - Use existing API token
 
 **Example prompts:**
+
 - *"Find me some good 90s comedies under 2 hours"*
 - *"What should I watch next?"*
 - *"I'm in the mood for something dark and funny"*
@@ -445,6 +486,7 @@ Once connected to Claude Desktop, you'll have access to these Jellyfin tools:
 ## 📚 Documentation
 
 ### Primary Documentation
+
 - **[`README.md`](./README.md)** - **Complete user guide** with installation, authentication, security, and development
   - All setup procedures consolidated with progressive disclosure
   - Comprehensive security best practices embedded throughout
@@ -452,14 +494,16 @@ Once connected to Claude Desktop, you'll have access to these Jellyfin tools:
   - Internal navigation and cross-references for easy access
 
 ### Archived Documentation
+
 The following files contain the original detailed documentation and remain available for reference:
 
 - **[`SETUP.md`](./SETUP.md)** - *(Archived)* Original detailed setup guide
-- **[`AUTHENTICATION.md`](./AUTHENTICATION.md)** - *(Archived)* Original authentication documentation  
+- **[`AUTHENTICATION.md`](./AUTHENTICATION.md)** - *(Archived)* Original authentication documentation
 - **[`SECURITY.md`](./SECURITY.md)** - *(Archived)* Original security best practices
 - **[`PRD.md`](./PRD.md)** - Product Requirements Document (technical specifications)
 
 ### Migration Information
+
 > 📋 **For Existing Users**: All information from the archived files has been integrated into this README with improved organization and cross-referencing. The archived files will remain available for backward compatibility but **this README is now the primary documentation source**.
 >
 > 🔗 **External Links**: If you have bookmarks or external references to the archived documentation files, they will continue to work, but we recommend updating links to point to the relevant sections in this README for the best experience.

@@ -1,0 +1,25 @@
+{
+  "markdownlint.config": {
+    "MD022": false,
+    "MD032": false,
+    "MD034": false,
+    "MD041": false,
+    "MD047": false,
+    "MD013": false,
+    "MD033": false
+  },
+  "markdownlint.ignore": [
+    "**/.codeium/**",
+    "**/windsurf/**",
+    "**/brain/**",
+    "**/code_tracker/**",
+    "node_modules/**"
+  ],
+  "files.exclude": {
+    "**/.codeium": true,
+    "**/windsurf/brain": true,
+    "**/windsurf/code_tracker": true
+  },
+  "json.schemas": [],
+  "json.schemaDownload.enable": false
+}

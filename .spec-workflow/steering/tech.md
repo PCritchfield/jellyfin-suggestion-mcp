@@ -1,11 +1,13 @@
 # Technology Stack
 
 ## Project Type
+
 **MCP Server**: A Model Context Protocol server that bridges AI assistants with Jellyfin media libraries, enabling conversational media discovery through structured tool interfaces.
 
 ## Core Technologies
 
 ### Primary Language(s)
+
 - **Language**: TypeScript (targeting ES2022)
 - **Runtime/Compiler**: Node.js 18+ with native ESM support
 - **Language-specific tools**:
@@ -14,6 +16,7 @@
   - **Development Runtime**: tsx for hot reloading during development
 
 ### Key Dependencies/Libraries
+
 - **@modelcontextprotocol/sdk ^1.17.2**: Core MCP protocol implementation for server creation and request handling
 - **axios ^1.11.0**: HTTP client for Jellyfin API communication with request/response interceptors
 - **zod ^4.0.17**: Runtime type validation and schema parsing for API inputs/outputs
@@ -21,7 +24,9 @@
 - **yaml ^2.8.1**: YAML parsing for specification loading and validation
 
 ### Application Architecture
+
 **Event-Driven MCP Server Architecture**:
+
 - **Request-Response Pattern**: Handles MCP protocol requests (tools, resources) via registered handlers
 - **Authentication Layer**: Pluggable authentication with session management and token-based API access
 - **Client Abstraction**: JellyfinClient wrapper providing type-safe API access with error handling
@@ -29,16 +34,19 @@
 - **Recommendation Engine**: Pluggable ranking system for similarity matching and personalization
 
 ### Data Storage (if applicable)
+
 - **Primary storage**: External Jellyfin server database (PostgreSQL/SQLite) - read-only access
 - **Caching**: In-memory session storage for authentication tokens and pending requests
 - **Data formats**: JSON for MCP protocol communication, YAML for specification files
 
 ### External Integrations (if applicable)
+
 - **APIs**: Jellyfin Server REST API (10.8+) for media library access
 - **Protocols**: HTTP/REST over configurable base URLs, MCP over stdio transport
 - **Authentication**: Jellyfin API token authentication with username/password fallback
 
 ### Monitoring & Dashboard Technologies (if applicable)
+
 - **Dashboard Framework**: CLI-based development tools and test harnesses
 - **Real-time Communication**: stdio transport for MCP protocol communication
 - **Visualization Libraries**: JSON pretty-printing for debug output and API responses
@@ -47,6 +55,7 @@
 ## Development Environment
 
 ### Build & Development Tools
+
 - **Build System**: TypeScript compiler with source maps and declaration files
 - **Package Management**: Yarn with frozen lockfiles and dependency auditing
 - **Development workflow**:
@@ -55,6 +64,7 @@
   - **CLI Tools**: Dedicated test utilities for connection and authentication testing
 
 ### Code Quality Tools
+
 - **Static Analysis**:
   - ESLint 9.33+ with TypeScript support and strict configuration
   - TypeScript strict mode with exactOptionalPropertyTypes and noUncheckedIndexedAccess
@@ -66,6 +76,7 @@
 - **Documentation**: Inline JSDoc comments with TypeScript declaration generation
 
 ### Version Control & Collaboration
+
 - **VCS**: Git with conventional commits and semantic versioning
 - **Branching Strategy**: Trunk-based development with main branch
 - **Code Review Process**:
@@ -74,11 +85,13 @@
   - **Semantic Release**: Automated versioning and changelog generation
 
 ### Dashboard Development (if applicable)
+
 - **Live Reload**: Development server with automatic restart on file changes
 - **Port Management**: stdio-based communication (no port conflicts)
 - **Multi-Instance Support**: Session-isolated authentication allowing multiple concurrent users
 
 ## Deployment & Distribution (if applicable)
+
 - **Target Platform(s)**: Node.js environments (local development, CI/CD, production servers)
 - **Distribution Method**:
   - **NPM Registry**: Published as `jellyfin-suggestion-mcp` for global installation
@@ -89,12 +102,14 @@
 ## Technical Requirements & Constraints
 
 ### Performance Requirements
+
 - **Response Time**: < 2 seconds for ≤ 24 items on ≤ 20k-item libraries
 - **Memory Usage**: Minimal memory footprint with streaming JSON processing
 - **Concurrency**: Single-threaded with async/await patterns for I/O operations
 - **Library Size**: Efficient handling of large media libraries (20k+ items)
 
 ### Compatibility Requirements
+
 - **Platform Support**: Node.js 18+ on Linux, macOS, Windows
 - **Dependency Versions**:
   - MCP SDK 1.17+, Jellyfin Server 10.8+
@@ -105,6 +120,7 @@
   - JSON Schema validation for all inputs/outputs
 
 ### Security & Compliance
+
 - **Security Requirements**:
   - No credential storage in memory or logs
   - Username/password authentication for non-admin users (API keys restricted to admins)
@@ -118,6 +134,7 @@
   - **Output Sanitization**: Sensitive data automatically redacted from responses
 
 ### Scalability & Reliability
+
 - **Expected Load**: Single-user sessions with moderate request volume (< 10 RPS)
 - **Availability Requirements**: Graceful degradation with authentication errors
 - **Growth Projections**: Support for multiple Jellyfin instances and enhanced recommendation algorithms
@@ -125,6 +142,7 @@
 ## Technical Decisions & Rationale
 
 ### Decision Log
+
 1. **TypeScript with Strict Configuration**: Chosen for type safety in MCP protocol handling and Jellyfin API integration. Strict settings prevent common runtime errors in AI-driven environments.
 
 2. **Zod for Runtime Validation**: Selected over alternatives like Joi for better TypeScript integration and zero-dependency validation of MCP inputs, ensuring protocol compliance.
