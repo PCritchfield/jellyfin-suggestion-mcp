@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/steering/structure.md",
-  "currentVersion": 2,
+  "currentVersion": 4,
   "snapshots": [
     {
       "version": 1,
@@ -17,6 +17,22 @@
       "trigger": "approved",
       "approvalId": "approval_1759107855266_zc5sqw8ww",
       "approvalTitle": "Structure Steering Document - Codebase Organization & Patterns"
+    },
+    {
+      "version": 3,
+      "filename": "snapshot-003.json",
+      "timestamp": "2025-09-30T09:26:29.560Z",
+      "trigger": "revision_requested",
+      "approvalId": "approval_1759224285224_n8wtx88rk",
+      "approvalTitle": "Updated structure.md with new documentation architecture"
+    },
+    {
+      "version": 4,
+      "filename": "snapshot-004.json",
+      "timestamp": "2025-09-30T09:28:05.116Z",
+      "trigger": "approved",
+      "approvalId": "approval_1759224448336_bge1u3tql",
+      "approvalTitle": "Updated structure.md (REVISED) - Corrected file deletion vs archival"
     }
   ]
 }

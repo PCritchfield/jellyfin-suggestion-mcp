@@ -1,6 +1,6 @@
 {
   "filePath": ".spec-workflow/steering/tech.md",
-  "currentVersion": 3,
+  "currentVersion": 4,
   "snapshots": [
     {
       "version": 1,
@@ -25,6 +25,14 @@
       "trigger": "approved",
       "approvalId": "approval_1759107681128_7hork8qrk",
       "approvalTitle": "Tech Steering Document - Updated with Authentication Limitations"
+    },
+    {
+      "version": 4,
+      "filename": "snapshot-004.json",
+      "timestamp": "2025-09-30T09:26:38.510Z",
+      "trigger": "approved",
+      "approvalId": "approval_1759224284429_vdy0q6kii",
+      "approvalTitle": "Updated tech.md with documentation-consolidation implementation details"
     }
   ]
 }

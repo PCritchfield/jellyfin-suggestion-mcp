@@ -1,0 +1,27 @@
+{
+  "id": "approval_1759224285224_n8wtx88rk",
+  "title": "Updated structure.md with new documentation architecture",
+  "filePath": ".spec-workflow/steering/structure.md",
+  "type": "document",
+  "status": "needs-revision",
+  "createdAt": "2025-09-30T09:24:45.224Z",
+  "category": "steering",
+  "categoryName": "steering",
+  "response": "Feedback Summary (1 comments):\n\nSpecific Text Comments:\n1. \"├── [ARCHIVED] SETUP.md         # Archived: conten...\": These have been deleted not archived\n",
+  "annotations": "{\n  \"decision\": \"needs-revision\",\n  \"comments\": [\n    {\n      \"type\": \"selection\",\n      \"comment\": \"These have been deleted not archived\",\n      \"timestamp\": \"2025-09-30T09:25:23.329Z\",\n      \"selectedText\": \"├── [ARCHIVED] SETUP.md         # Archived: content moved to README.md\\r\\n├── [ARCHIVED] AUTHENTICATION.md # Archived: content moved to README.md\\r\\n├── [ARCHIVED] SECURITY.md      # Archived: content moved to README.md\\r\\n├── [ARCHIVED] PRD.md           # Archived: content moved to README.md\",\n      \"highlightColor\": {\n        \"bg\": \"rgba(255, 235, 59, 0.3)\",\n        \"border\": \"#FFEB3B\",\n        \"name\": \"#ffeb3b\"\n      },\n      \"id\": \"comment_1759224323329_ynvtj1rpn\"\n    }\n  ],\n  \"summary\": \"Feedback Summary (1 comments):\\n\\nSpecific Text Comments:\\n1. \\\"├── [ARCHIVED] SETUP.md         # Archived: conten...\\\": These have been deleted not archived\\n\",\n  \"timestamp\": \"2025-09-30T09:26:29.760Z\"\n}",
+  "respondedAt": "2025-09-30T09:26:29.564Z",
+  "comments": [
+    {
+      "type": "selection",
+      "comment": "These have been deleted not archived",
+      "timestamp": "2025-09-30T09:25:23.329Z",
+      "selectedText": "├── [ARCHIVED] SETUP.md         # Archived: content moved to README.md\r\n├── [ARCHIVED] AUTHENTICATION.md # Archived: content moved to README.md\r\n├── [ARCHIVED] SECURITY.md      # Archived: content moved to README.md\r\n├── [ARCHIVED] PRD.md           # Archived: content moved to README.md",
+      "highlightColor": {
+        "bg": "rgba(255, 235, 59, 0.3)",
+        "border": "#FFEB3B",
+        "name": "#ffeb3b"
+      },
+      "id": "comment_1759224323329_ynvtj1rpn"
+    }
+  ]
+}
