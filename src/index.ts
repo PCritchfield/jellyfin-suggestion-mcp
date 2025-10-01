@@ -49,22 +49,22 @@ function buildJellyfinUrl(): string {
   try {
     // Parse the base URL to check if it already has a protocol
     new URL(rawBaseUrl);
-    
+
     // If base URL already has a protocol, it takes precedence
     return rawBaseUrl;
   } catch {
     // Base URL doesn't have a protocol, construct with protocol configuration
     if (protocol) {
       const normalizedProtocol = protocol.toLowerCase();
-      
+
       // Validate protocol
       if (normalizedProtocol !== "http" && normalizedProtocol !== "https") {
         throw new Error(`Invalid JELLYFIN_PROTOCOL "${protocol}". Must be "http" or "https"`);
       }
-      
+
       return `${normalizedProtocol}://${rawBaseUrl}`;
     }
-    
+
     // No protocol specified, default to https for security
     return `https://${rawBaseUrl}`;
   }
@@ -109,7 +109,7 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
 
 server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   const { uri } = request.params;
-  
+
   if (uri === "jellyfin://snapshot") {
     try {
       const snapshot = await getLibrarySnapshot(jellyfinClient);
@@ -126,7 +126,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
       throw new Error(`Failed to get library snapshot: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
-  
+
   throw new Error(`Unknown resource: ${uri}`);
 });
 
@@ -259,7 +259,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 // Handle tool calls
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
-  
+
   try {
     switch (name) {
       case "list_items":
@@ -288,7 +288,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function handleListItems(args: any) {
   try {
     const input = ListItemsInput.parse(args);
-    
+
     // Transform MCP input to Jellyfin API parameters
     const params: Record<string, any> = {
       Recursive: true,
@@ -296,24 +296,24 @@ async function handleListItems(args: any) {
       SortBy: mapSortToJellyfin(input.sort),
       SortOrder: "Descending",
     };
-    
+
     // Apply view filter
     if (input.view !== "All") {
       params.IncludeItemTypes = mapViewToItemTypes(input.view);
     }
-    
+
     // Apply filters
     if (input.filters) {
       applyFiltersToParams(params, input.filters);
     }
-    
+
     // Apply cursor for pagination
     if (input.cursor) {
       params.StartIndex = parseInt(input.cursor, 10) || 0;
     }
-    
+
     const response = await jellyfinClient.listItems(params);
-    
+
     return {
       content: [
         {
@@ -340,10 +340,10 @@ async function handleListItems(args: any) {
 async function handleSearchItems(args: any) {
   try {
     const input = SearchItemsInput.parse(args);
-    
+
     // For search, we'll use both search hints and filtered listing
     let items: any[] = [];
-    
+
     if (input.query) {
       const searchResponse = await jellyfinClient.searchHints(input.query, input.limit);
       items = searchResponse.SearchHints || [];
@@ -353,15 +353,15 @@ async function handleSearchItems(args: any) {
         Recursive: true,
         Limit: Math.min(input.limit, 100),
       };
-      
+
       if (input.filters) {
         applyFiltersToParams(params, input.filters);
       }
-      
+
       const response = await jellyfinClient.listItems(params);
       items = response.Items || [];
     }
-    
+
     return {
       content: [
         {
@@ -386,9 +386,9 @@ async function handleSearchItems(args: any) {
 async function handleNextUp(args: any) {
   try {
     const input = NextUpInput.parse(args);
-    
+
     const response = await jellyfinClient.nextUp(input.series_id, input.limit);
-    
+
     return {
       content: [
         {
@@ -412,27 +412,27 @@ async function handleNextUp(args: any) {
 async function handleRecommendSimilar(args: any) {
   try {
     const input = RecommendSimilarInput.parse(args);
-    
+
     let seedItem: any = null;
     if (input.seed_item_id) {
       seedItem = await jellyfinClient.item(input.seed_item_id);
     }
-    
+
     // Get candidate items from the library
     const candidatesResponse = await jellyfinClient.listItems({
       Recursive: true,
       Limit: 200, // Get a good pool of candidates
       IncludeItemTypes: "Movie,Series",
     });
-    
+
     const candidates = candidatesResponse.Items || [];
-    
+
     // Use our ranking algorithm
     const recommendations = simpleRank(candidates, {
       seed: seedItem || undefined,
       mood: input.mood || undefined,
     });
-    
+
     // Transform to expected format with rationale
     const items = recommendations.slice(0, input.limit).map(rec => {
       const item = candidates.find((c: any) => c.Id === rec.itemId);
@@ -442,7 +442,7 @@ async function handleRecommendSimilar(args: any) {
         why: rec.why,
       };
     });
-    
+
     return {
       content: [
         {
@@ -465,13 +465,13 @@ async function handleRecommendSimilar(args: any) {
 async function handleGetStreamInfo(args: any) {
   try {
     const input = GetStreamInfoInput.parse(args);
-    
+
     const streamInfo = await jellyfinClient.streamInfo(input.item_id);
-    
+
     // Extract basic playback info
     const canDirectPlay = streamInfo.MediaSources?.[0]?.SupportsDirectStream || false;
     const container = streamInfo.MediaSources?.[0]?.Container || "unknown";
-    
+
     return {
       content: [
         {
@@ -518,34 +518,34 @@ function applyFiltersToParams(params: Record<string, any>, filters: any) {
   if (filters.include_item_types) {
     params.IncludeItemTypes = filters.include_item_types.join(",");
   }
-  
+
   if (filters.genres) {
     params.Genres = filters.genres.join(",");
   }
-  
+
   if (filters.people) {
     params.Person = filters.people.join(",");
   }
-  
+
   if (filters.studios) {
     params.Studios = filters.studios.join(",");
   }
-  
+
   if (filters.year_range) {
     const [minYear, maxYear] = filters.year_range;
     params.Years = `${minYear},${maxYear}`;
   }
-  
+
   if (filters.runtime_minutes) {
     const [minRuntime, maxRuntime] = filters.runtime_minutes;
     params.MinRuntime = minRuntime;
     params.MaxRuntime = maxRuntime;
   }
-  
+
   if (filters.kid_safe !== undefined) {
     params.MaxOfficialRating = filters.kid_safe ? "PG" : undefined;
   }
-  
+
   if (filters.text) {
     params.SearchTerm = filters.text;
   }
@@ -559,15 +559,15 @@ async function handleAuthenticateUser(args: any) {
 
     const authManager = jellyfinClient.getAuthManager();
     const session = await authManager.authenticateUser(username, password);
-    
+
     // Update the client's session
     jellyfinClient.setSession(session);
-    
+
     // Check if there's a pending request to retry
     const pendingRequest = authManager.getPendingRequest();
     if (pendingRequest) {
       console.error(`🔄 Retrying original request: ${pendingRequest.toolName}`);
-      
+
       // Retry the original request
       try {
         const retryResult = await retryPendingRequest(pendingRequest);
@@ -644,14 +644,14 @@ async function handleAuthenticateUser(args: any) {
 async function handleSetToken(args: any) {
   try {
     const { access_token, user_id } = args;
-    
+
     if (!access_token) {
       throw new Error("Access token is required");
     }
 
     const authManager = jellyfinClient.getAuthManager();
     const session = await authManager.setToken(access_token, user_id);
-    
+
     // Update the client's session
     jellyfinClient.setSession(session);
 

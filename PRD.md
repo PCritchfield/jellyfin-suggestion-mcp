@@ -27,13 +27,13 @@ This project adds a **Model Context Protocol (MCP) server** that exposes Jellyfi
 ---
 
 ## User Stories
-1. **Filtering**  
+1. **Filtering**
    As a user, I can say “Find me family movies from the 80s” and the AI uses `search_items` with filters.
-2. **Continuation**  
+2. **Continuation**
    As a user, I can say “What should I watch next?” and the AI calls `next_up` to suggest my next episode.
-3. **Similar Titles**  
+3. **Similar Titles**
    As a user, I can say “More like Grosse Pointe Blank” and the AI calls `recommend_similar` to find similar items with reasons.
-4. **Cold Start**  
+4. **Cold Start**
    As a user, I can ask “What’s new?” and the AI reads `jellyfin://snapshot` to summarize recent additions and top genres.
 
 ---

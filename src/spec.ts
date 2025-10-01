@@ -11,7 +11,7 @@ export interface LoadedSpec {
 }
 let cached: LoadedSpec | null = null;
 
-const DEFAULT_SPEC = path.resolve(process.env.SPEC_PATH ?? "./jellyfin-mcp.spec.yaml");
+const DEFAULT_SPEC = path.resolve(process.env.SPEC_PATH ?? "../jellyfin-mcp.spec.yaml");
 
 export function loadSpec(specPath = DEFAULT_SPEC): LoadedSpec {
   const p = path.resolve(specPath);

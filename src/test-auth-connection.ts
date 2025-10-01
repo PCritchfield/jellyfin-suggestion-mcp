@@ -18,10 +18,10 @@ async function testAuthentication() {
 
   try {
     const authManager = new AuthenticationManager(baseUrl);
-    
+
     console.log("📡 Testing authentication manager...");
     console.log(`   Server URL: ${baseUrl}`);
-    
+
     // Test 1: Check environment variable authentication
     console.log("\n🧪 Test 1: Environment Variable Authentication");
     if (process.env.JELLYFIN_TOKEN && process.env.JELLYFIN_USER_ID) {
@@ -37,12 +37,12 @@ async function testAuthentication() {
     } else {
       console.log("   No environment credentials found (this is expected for new setup)");
     }
-    
+
     // Test 2: Interactive authentication prompt
     console.log("\n🧪 Test 2: Interactive Authentication");
     console.log("   Clearing any existing session...");
     authManager.clearSession();
-    
+
     try {
       await authManager.getAuthentication();
       console.log("⚠️  Expected authentication required error, but got session");
@@ -54,12 +54,12 @@ async function testAuthentication() {
         console.log("❌ Unexpected error:", error instanceof Error ? error.message : String(error));
       }
     }
-    
+
     // Test 3: Session info
     console.log("\n🧪 Test 3: Session Information");
     const sessionInfo = authManager.getSessionInfo();
     console.log("   Session info:", JSON.stringify(sessionInfo, null, 2));
-    
+
     // Test 4: Pending request functionality
     console.log("\n🧪 Test 4: Pending Request Management");
     authManager.storePendingRequest("list_items", { limit: 10 });
@@ -71,16 +71,16 @@ async function testAuthentication() {
     } else {
       console.log("❌ Failed to store/retrieve pending request");
     }
-    
+
     console.log("\n🎉 Authentication system tests completed!");
     console.log("\n📋 Next Steps:");
     console.log("   1. Use authenticate_user tool with your Jellyfin credentials");
     console.log("   2. Or use set_token tool with an existing API token");
     console.log("   3. Then try using other MCP tools like list_items");
-    
+
   } catch (error: any) {
     console.error("❌ Authentication test failed");
-    
+
     if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
       console.error("\n🔧 Connection Error:");
       console.error("   Cannot connect to Jellyfin server");
@@ -89,12 +89,12 @@ async function testAuthentication() {
     } else {
       console.error("\n📋 Error Details:", error.message);
     }
-    
+
     console.error("\n🔧 Troubleshooting:");
     console.error("   1. Verify Jellyfin server is running and accessible");
     console.error("   2. Check firewall and network settings");
     console.error("   3. Ensure JELLYFIN_BASE_URL includes protocol (http:// or https://)");
-    
+
     process.exit(1);
   }
 }

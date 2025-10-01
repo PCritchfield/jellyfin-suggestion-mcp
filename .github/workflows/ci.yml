@@ -11,45 +11,45 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'yarn'
-        
+
     - name: Install dependencies
       run: yarn install --frozen-lockfile
-      
+
     - name: Run ESLint
       run: yarn lint
-      
+
     - name: Check TypeScript compilation
       run: yarn build
 
   test:
     name: Test
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'yarn'
-        
+
     - name: Install dependencies
       run: yarn install --frozen-lockfile
-      
+
     - name: Run tests
       run: yarn test
-      
+
     - name: Test server compilation
       run: yarn test:server

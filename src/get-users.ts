@@ -31,14 +31,14 @@ async function getUsers() {
     });
 
     const users = response.data;
-    
+
     if (!users || users.length === 0) {
       console.log("⚠️  No users found");
       return;
     }
 
     console.log(`✅ Found ${users.length} user(s):\n`);
-    
+
     users.forEach((user: any, index: number) => {
       console.log(`${index + 1}. ${user.Name}`);
       console.log(`   ID: ${user.Id}`);
@@ -51,7 +51,7 @@ async function getUsers() {
 
   } catch (error: any) {
     console.error("❌ Failed to fetch users");
-    
+
     if (error.response?.status === 401) {
       console.error("   Authentication failed - check your JELLYFIN_TOKEN");
     } else if (error.response?.status === 403) {
@@ -61,12 +61,12 @@ async function getUsers() {
     } else {
       console.error(`   ${error.message}`);
     }
-    
+
     console.error("\n🔧 Make sure:");
     console.error("   1. JELLYFIN_BASE_URL is correct");
     console.error("   2. JELLYFIN_TOKEN is valid and has admin privileges");
     console.error("   3. Jellyfin server is running and accessible");
-    
+
     process.exit(1);
   }
 }

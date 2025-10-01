@@ -11,30 +11,30 @@ jobs:
   code-quality:
     name: Code Quality Analysis
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0  # Needed for SonarCloud
-      
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'yarn'
-        
+
     - name: Install dependencies
       run: yarn install --frozen-lockfile
-      
+
     - name: Run ESLint with JSON output
       run: yarn lint --format json --output-file eslint-report.json
       continue-on-error: true
-      
+
     - name: Run TypeScript compiler check
       run: npx tsc --noEmit --pretty false
       continue-on-error: true
-      
+
     - name: Check for TODO/FIXME comments
       run: |
         echo "Checking for TODO/FIXME comments..."
@@ -43,7 +43,7 @@ jobs:
         else
           echo "No TODO/FIXME comments found"
         fi
-      
+
     - name: Check for console.log statements
       run: |
         echo "Checking for console.log statements in core application files..."
@@ -56,24 +56,24 @@ jobs:
           echo "No console.log statements found in core application files"
           echo "CLI tools and test utilities properly use console.log for user output"
         fi
-      
+
     - name: Check file sizes
       run: |
         echo "Checking for large files..."
         find src/ -name "*.ts" -size +50k -exec echo "Large file found: {} (consider splitting)" \; || true
-        
+
     - name: Check for unused dependencies
       run: |
         echo "Checking for unused dependencies..."
         npx depcheck --ignores="@types/*,tsx,typescript,eslint,@eslint/*,typescript-eslint,globals" || true
-        
+
     - name: Generate complexity report
       run: |
         echo "Generating complexity report..."
         npx ts-node -e "
         import { readFileSync, readdirSync } from 'fs';
         import { join } from 'path';
-        
+
         function analyzeComplexity(dir: string) {
           const files = readdirSync(dir, { withFileTypes: true });
           for (const file of files) {
@@ -92,18 +92,18 @@ jobs:
             }
           }
         }
-        
+
         analyzeComplexity('src');
         " || echo "Complexity analysis completed"
 
   documentation-check:
     name: Documentation Quality
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Check README exists and has content
       run: |
         if [ ! -f README.md ]; then
@@ -115,7 +115,7 @@ jobs:
           exit 1
         fi
         echo "README.md looks good"
-        
+
     - name: Check for broken internal links
       run: |
         echo "Checking for broken internal links..."
@@ -132,7 +132,7 @@ jobs:
           fi
         done
         echo "Internal links check completed"
-        
+
     - name: Check code examples in documentation
       run: |
         echo "Checking code examples in documentation..."

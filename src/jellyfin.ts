@@ -36,7 +36,7 @@ export class JellyfinClient {
     if (this.currentSession) {
       return this.currentSession;
     }
-    
+
     const session = await this.authManager.getAuthentication();
     this.currentSession = session;
     return session;
@@ -51,7 +51,7 @@ export class JellyfinClient {
     options: { params?: any; data?: any } = {}
   ): Promise<T> {
     const session = await this.getSession();
-    
+
     const headers = {
       "X-MediaBrowser-Token": session.accessToken,
       ...(options.data && { "Content-Type": "application/json" }),

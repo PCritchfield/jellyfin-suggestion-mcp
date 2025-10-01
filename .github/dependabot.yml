@@ -30,7 +30,7 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
-        
+
   # Enable security updates for GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
