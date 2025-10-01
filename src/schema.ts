@@ -40,3 +40,8 @@ export const RecommendSimilarInput = z.object({
 export const GetStreamInfoInput = z.object({
   item_id: z.string()
 });
+
+export const AuthenticateUserInput = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required")
+});

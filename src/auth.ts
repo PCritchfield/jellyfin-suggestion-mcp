@@ -41,8 +41,9 @@ export class AuthenticationManager {
   /**
    * Get current authentication session using hybrid approach:
    * 1. Check in-memory session
-   * 2. Try environment variables (existing approach)
-   * 3. Trigger interactive authentication
+   * 2. Try environment variables (API key approach)
+   * 3. Try environment variables (username/password approach)
+   * 4. Trigger interactive authentication
    */
   async getAuthentication(): Promise<AuthSession> {
     // 1. Check in-memory session
@@ -50,7 +51,7 @@ export class AuthenticationManager {
       return this.session;
     }
 
-    // 2. Try environment variables (existing approach)
+    // 2. Try environment variables (API key approach)
     if (process.env.JELLYFIN_TOKEN && process.env.JELLYFIN_USER_ID) {
       const envSession: AuthSession = {
         accessToken: process.env.JELLYFIN_TOKEN,
@@ -67,7 +68,21 @@ export class AuthenticationManager {
       }
     }
 
-    // 3. Trigger interactive authentication
+    // 3. Try environment variables (username/password approach)
+    if (process.env.JELLYFIN_USERNAME && process.env.JELLYFIN_PASSWORD) {
+      try {
+        const session = await this.authenticateUser(
+          process.env.JELLYFIN_USERNAME,
+          process.env.JELLYFIN_PASSWORD
+        );
+        console.log("✅ Successfully authenticated using environment username/password");
+        return session;
+      } catch (error: any) {
+        console.error("⚠️  Environment username/password authentication failed:", error.message);
+      }
+    }
+
+    // 4. Trigger interactive authentication
     throw new AuthenticationRequiredError();
   }
 
