@@ -18,6 +18,7 @@ import {
   NextUpInput,
   RecommendSimilarInput,
   GetStreamInfoInput,
+  AuthenticateUserInput,
 } from "./schema.js";
 import { simpleRank } from "./ranker.js";
 import { getLibrarySnapshot } from "./resources.js";
@@ -36,9 +37,38 @@ function mustEnv(key: string): string {
 }
 
 // Initialize Jellyfin client with optional credentials
-const baseUrl = mustEnv("JELLYFIN_BASE_URL");
+const baseUrl = buildJellyfinUrl();
 const userId = getEnv("JELLYFIN_USER_ID");
 const token = getEnv("JELLYFIN_TOKEN");
+
+// Build Jellyfin URL with protocol configuration support
+function buildJellyfinUrl(): string {
+  const rawBaseUrl = mustEnv("JELLYFIN_BASE_URL");
+  const protocol = getEnv("JELLYFIN_PROTOCOL");
+
+  try {
+    // Parse the base URL to check if it already has a protocol
+    new URL(rawBaseUrl);
+    
+    // If base URL already has a protocol, it takes precedence
+    return rawBaseUrl;
+  } catch {
+    // Base URL doesn't have a protocol, construct with protocol configuration
+    if (protocol) {
+      const normalizedProtocol = protocol.toLowerCase();
+      
+      // Validate protocol
+      if (normalizedProtocol !== "http" && normalizedProtocol !== "https") {
+        throw new Error(`Invalid JELLYFIN_PROTOCOL "${protocol}". Must be "http" or "https"`);
+      }
+      
+      return `${normalizedProtocol}://${rawBaseUrl}`;
+    }
+    
+    // No protocol specified, default to https for security
+    return `https://${rawBaseUrl}`;
+  }
+}
 
 const jellyfinClient = new JellyfinClient({
   baseUrl,
@@ -524,11 +554,8 @@ function applyFiltersToParams(params: Record<string, any>, filters: any) {
 // Authentication tool handlers
 async function handleAuthenticateUser(args: any) {
   try {
-    const { username, password } = args;
-    
-    if (!username || !password) {
-      throw new Error("Username and password are required");
-    }
+    const input = AuthenticateUserInput.parse(args);
+    const { username, password } = input;
 
     const authManager = jellyfinClient.getAuthManager();
     const session = await authManager.authenticateUser(username, password);
