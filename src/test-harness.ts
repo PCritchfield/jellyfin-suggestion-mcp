@@ -1,45 +1,82 @@
 import { loadSpec, getSpecSection } from "./spec.js";
+import { z } from "zod";
 
 export interface TestCase {
   name: string;
   call: string;
-  input: any;
-  expect: any;
+  input: Record<string, unknown>;
+  expect: Record<string, unknown>;
   preconditions?: {
     policy?: string;
   };
 }
 
+/**
+ * Zod schema for validating test case structure from spec file
+ */
+const TestCaseSchema = z.object({
+  name: z.string().min(1, "Test case must have a non-empty name"),
+  call: z.string().min(1, "Test case must specify a tool to call"),
+  input: z.record(z.string(), z.unknown()).optional().default({}),
+  expect: z.record(z.string(), z.unknown()),
+  preconditions: z.object({
+    policy: z.string().optional(),
+  }).optional(),
+});
+
 export interface TestResult {
   name: string;
   passed: boolean;
   error?: string | undefined;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 export class SpecTestHarness {
-  private spec: any;
-  private mcpServer: any; // Will be the actual MCP server instance
+  private spec: Record<string, unknown>;
+  private mcpServer: unknown; // Will be the actual MCP server instance
   private mockJellyfin: MockJellyfinClient;
 
-  constructor(mcpServer?: any) {
+  constructor(mcpServer?: unknown) {
     this.spec = loadSpec().json;
     this.mcpServer = mcpServer;
     this.mockJellyfin = new MockJellyfinClient();
   }
 
   /**
-   * Load all test cases from the spec
+   * Load all test cases from the spec with validation
+   * @throws {Error} If any test case has invalid structure
    */
   getTestCases(): TestCase[] {
     const tests = getSpecSection("tests") || [];
-    return tests.map((test: any) => ({
-      name: test.name,
-      call: test.call,
-      input: test.input,
-      expect: test.expect,
-      preconditions: test.preconditions
-    }));
+    if (!Array.isArray(tests)) {
+      console.warn("No test cases found in spec or 'tests' section is not an array");
+      return [];
+    }
+
+    const validatedTests: TestCase[] = [];
+    const errors: string[] = [];
+
+    tests.forEach((test: unknown, index: number) => {
+      try {
+        // Validate test structure using Zod schema
+        const validated = TestCaseSchema.parse(test);
+        validatedTests.push(validated as TestCase);
+      } catch (error) {
+        const errorMessage = error instanceof z.ZodError
+          ? `Test case ${index + 1}: ${error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ')}`
+          : `Test case ${index + 1}: ${error instanceof Error ? error.message : String(error)}`;
+        errors.push(errorMessage);
+      }
+    });
+
+    // If there are validation errors, report them all at once
+    if (errors.length > 0) {
+      const errorSummary = `Found ${errors.length} invalid test case(s) in spec:\n${errors.map(e => `  - ${e}`).join('\n')}`;
+      console.error(`\n❌ Test Case Validation Errors:\n${errorSummary}\n`);
+      throw new Error(errorSummary);
+    }
+
+    return validatedTests;
   }
 
   /**
@@ -60,12 +97,17 @@ export class SpecTestHarness {
       // Validate the response against expectations
       const validationResult = this.validateResponse(response, testCase.expect);
 
-      return {
+      const result: TestResult = {
         name: testCase.name,
         passed: validationResult.passed,
-        error: validationResult.error,
-        details: validationResult.details
       };
+      if (validationResult.error !== undefined) {
+        result.error = validationResult.error;
+      }
+      if (validationResult.details !== undefined) {
+        result.details = validationResult.details;
+      }
+      return result;
     } catch (error) {
       return {
         name: testCase.name,
@@ -117,7 +159,7 @@ export class SpecTestHarness {
   /**
    * Call MCP tool (placeholder - will be implemented with actual server)
    */
-  private async callMCPTool(toolName: string, input: any): Promise<any> {
+  private async callMCPTool(toolName: string, input: Record<string, unknown>): Promise<Record<string, unknown>> {
     if (!this.mcpServer) {
       // Use mock responses when no server is provided
       console.log(`  📝 Using mock response for ${toolName}`);
@@ -141,8 +183,9 @@ export class SpecTestHarness {
       const response = await this.simulateMCPCall(toolName, input);
 
       // Parse the response content
-      if (response.content && response.content[0] && response.content[0].text) {
-        return JSON.parse(response.content[0].text);
+      const responseObj = response as { content?: Array<{ text?: string }> };
+      if (responseObj.content && responseObj.content[0] && responseObj.content[0].text) {
+        return JSON.parse(responseObj.content[0].text) as Record<string, unknown>;
       }
 
       throw new Error("Invalid MCP response format");
@@ -155,7 +198,7 @@ export class SpecTestHarness {
   /**
    * Simulate MCP server call (this would be replaced with actual MCP protocol calls)
    */
-  private async simulateMCPCall(_toolName: string, _input: any): Promise<any> {
+  private async simulateMCPCall(_toolName: string, _input: Record<string, unknown>): Promise<Record<string, unknown>> {
     // For now, we'll directly call the tool handlers from our server
     // In a real implementation, this would go through the MCP protocol
 
@@ -170,7 +213,7 @@ export class SpecTestHarness {
   /**
    * Validate response against test expectations
    */
-  private validateResponse(response: any, expectations: any): { passed: boolean; error?: string; details?: any } {
+  private validateResponse(response: Record<string, unknown>, expectations: Record<string, unknown>): { passed: boolean; error?: string; details?: Record<string, unknown> } {
     try {
       // Handle different expectation types
       for (const [key, value] of Object.entries(expectations)) {
@@ -195,41 +238,43 @@ export class SpecTestHarness {
   /**
    * Validate a specific expectation
    */
-  private validateExpectation(response: any, expectationKey: string, expectationValue: any): boolean {
+  private validateExpectation(response: Record<string, unknown>, expectationKey: string, expectationValue: unknown): boolean {
     // Handle special expectation types
     switch (expectationKey) {
       case 'items.max_length':
-        return response.items && response.items.length <= expectationValue;
+        return Array.isArray(response.items) && typeof expectationValue === 'number' && response.items.length <= expectationValue;
 
       case 'items.length':
-        return response.items && response.items.length === expectationValue;
+        return Array.isArray(response.items) && typeof expectationValue === 'number' && response.items.length === expectationValue;
 
       case 'items.each':
-        return this.validateItemsEach(response.items, expectationValue);
+        return Array.isArray(response.items) && Array.isArray(expectationValue) && this.validateItemsEach(response.items, expectationValue as Record<string, unknown>[]);
 
       case 'items.none':
-        return this.validateItemsNone(response.items, expectationValue);
+        return Array.isArray(response.items) && Array.isArray(expectationValue) && this.validateItemsNone(response.items, expectationValue as Record<string, unknown>[]);
 
       case 'items.if_any':
-        return this.validateItemsIfAny(response.items, expectationValue);
+        return Array.isArray(response.items) && Array.isArray(expectationValue) && this.validateItemsIfAny(response.items, expectationValue as Record<string, unknown>[]);
 
       default:
         // Handle general field expectations
         if (typeof expectationValue === 'object' && expectationValue !== null) {
           // If expectationValue is an object with a 'type' field, it's a type check
-          if ((expectationValue as any).type === 'string') {
+          if ((expectationValue as Record<string, unknown>).type === 'string') {
             return typeof response[expectationKey] === 'string';
           }
           // If expectationValue is a nested object, validate its fields recursively
           if (response[expectationKey] && typeof response[expectationKey] === 'object') {
             for (const [subKey, subValue] of Object.entries(expectationValue)) {
-              if (typeof subValue === 'object' && subValue !== null && (subValue as any).type === 'string') {
-                if (typeof response[expectationKey][subKey] !== 'string') {
+              if (typeof subValue === 'object' && subValue !== null && (subValue as Record<string, unknown>).type === 'string') {
+                const responseKey = response[expectationKey] as Record<string, unknown>;
+                if (typeof responseKey[subKey] !== 'string') {
                   return false;
                 }
-              } else if (typeof subValue === 'object' && subValue !== null && (subValue as any).type === 'object') {
+              } else if (typeof subValue === 'object' && subValue !== null && (subValue as Record<string, unknown>).type === 'object') {
                 // Handle nested objects
-                if (!response[expectationKey][subKey] || typeof response[expectationKey][subKey] !== 'object') {
+                const responseKey = response[expectationKey] as Record<string, unknown>;
+                if (!responseKey[subKey] || typeof responseKey[subKey] !== 'object') {
                   return false;
                 }
               }
@@ -248,12 +293,12 @@ export class SpecTestHarness {
   /**
    * Validate that each item meets criteria
    */
-  private validateItemsEach(items: any[], criteria: any[]): boolean {
+  private validateItemsEach(items: unknown[], criteria: Record<string, unknown>[]): boolean {
     if (!items || !Array.isArray(items)) return false;
 
     return items.every(item => {
       return criteria.every(criterion => {
-        return this.validateCriterion(item, criterion);
+        return typeof item === 'object' && item !== null && this.validateCriterion(item as Record<string, unknown>, criterion);
       });
     });
   }
@@ -261,12 +306,12 @@ export class SpecTestHarness {
   /**
    * Validate that no items meet criteria
    */
-  private validateItemsNone(items: any[], criteria: any[]): boolean {
+  private validateItemsNone(items: unknown[], criteria: Record<string, unknown>[]): boolean {
     if (!items || !Array.isArray(items)) return true;
 
     return !items.some(item => {
       return criteria.every(criterion => {
-        return this.validateCriterion(item, criterion);
+        return typeof item === 'object' && item !== null && this.validateCriterion(item as Record<string, unknown>, criterion);
       });
     });
   }
@@ -274,12 +319,12 @@ export class SpecTestHarness {
   /**
    * Validate that if any items exist, they meet criteria
    */
-  private validateItemsIfAny(items: any[], criteria: any[]): boolean {
+  private validateItemsIfAny(items: unknown[], criteria: Record<string, unknown>[]): boolean {
     if (!items || !Array.isArray(items) || items.length === 0) return true;
 
     return items.some(item => {
       return criteria.every(criterion => {
-        return this.validateCriterion(item, criterion);
+        return typeof item === 'object' && item !== null && this.validateCriterion(item as Record<string, unknown>, criterion);
       });
     });
   }
@@ -287,24 +332,24 @@ export class SpecTestHarness {
   /**
    * Validate a single criterion against an item
    */
-  private validateCriterion(item: any, criterion: any): boolean {
-    const field = criterion.field;
+  private validateCriterion(item: Record<string, unknown>, criterion: Record<string, unknown>): boolean {
+    const field = criterion.field as string;
     const value = item[field];
 
     if (criterion.equals !== undefined) {
       return value === criterion.equals;
     }
 
-    if (criterion.between !== undefined) {
-      const [min, max] = criterion.between;
-      return value >= min && value <= max;
+    if (Array.isArray(criterion.between) && criterion.between.length === 2) {
+      const [min, max] = criterion.between as [number, number];
+      return typeof value === 'number' && value >= min && value <= max;
     }
 
-    if (criterion.in !== undefined) {
-      return criterion.in.includes(value);
+    if (Array.isArray(criterion.in)) {
+      return (criterion.in as unknown[]).includes(value);
     }
 
-    if (criterion.min_length !== undefined) {
+    if (typeof criterion.min_length === 'number') {
       return Array.isArray(value) && value.length >= criterion.min_length;
     }
 
@@ -314,11 +359,11 @@ export class SpecTestHarness {
   /**
    * Get actual value for error reporting
    */
-  private getActualValue(response: any, expectationKey: string): any {
+  private getActualValue(response: Record<string, unknown>, expectationKey: string): unknown {
     switch (expectationKey) {
       case 'items.max_length':
       case 'items.length':
-        return response.items?.length;
+        return Array.isArray(response.items) ? response.items.length : undefined;
       default:
         return response;
     }
@@ -327,7 +372,7 @@ export class SpecTestHarness {
   /**
    * Get mock response for testing (temporary until real server is implemented)
    */
-  private getMockResponse(toolName: string, input: any): any {
+  private getMockResponse(toolName: string, input: Record<string, unknown>): Record<string, unknown> {
     switch (toolName) {
       case 'list_items':
         return this.mockJellyfin.mockListItems(input);
@@ -353,7 +398,7 @@ export class SpecTestHarness {
         // Simulate setting a token for the session
         return {
           ok: true,
-          user_id: input?.user_id || "mock_user_1"
+          user_id: (input?.user_id as string | undefined) || "mock_user_1"
         };
       default:
         throw new Error(`Unknown tool: ${toolName}`);
@@ -371,34 +416,36 @@ class MockJellyfinClient {
     this.kidMode = enabled;
   }
 
-  mockListItems(input: any): any {
+  mockListItems(input: Record<string, unknown>): Record<string, unknown> {
     const items = this.generateMockItems(input);
+    const limit = typeof input.limit === 'number' ? input.limit : 24;
     return {
-      items: items.slice(0, Math.min(input.limit || 24, 200)),
+      items: items.slice(0, Math.min(limit, 200)),
       total: items.length,
-      next_cursor: items.length > (input.limit || 24) ? "next_page" : undefined
+      next_cursor: items.length > limit ? "next_page" : undefined
     };
   }
 
-  mockSearchItems(input: any): any {
+  mockSearchItems(input: Record<string, unknown>): Record<string, unknown> {
     return this.mockListItems(input);
   }
 
-  mockNextUp(input: any): any {
+  mockNextUp(input: Record<string, unknown>): Record<string, unknown> {
     const episodes = [
       { Id: "ep1", Name: "Episode 1", Type: "Episode", SeriesId: "series1" },
       { Id: "ep2", Name: "Episode 2", Type: "Episode", SeriesId: "series2" }
     ];
 
+    const limit = typeof input.limit === 'number' ? input.limit : 10;
     return {
-      items: episodes.slice(0, input.limit || 10),
+      items: episodes.slice(0, limit),
       total: episodes.length
     };
   }
 
-  mockRecommendSimilar(input: any): any {
+  mockRecommendSimilar(input: Record<string, unknown>): Record<string, unknown> {
     // Generate the requested number of recommendations
-    const limit = input.limit || 10;
+    const limit = typeof input.limit === 'number' ? input.limit : 10;
     const items = [];
 
     for (let i = 0; i < limit; i++) {
@@ -419,14 +466,14 @@ class MockJellyfinClient {
     };
   }
 
-  mockGetStreamInfo(_input: any): any {
+  mockGetStreamInfo(_input: Record<string, unknown>): Record<string, unknown> {
     return {
       can_direct_play: true,
       container: "mp4"
     };
   }
 
-  private generateMockItems(input: any): any[] {
+  private generateMockItems(input: Record<string, unknown>): Record<string, unknown>[] {
     const baseItems = [
       { Id: "1", Name: "The Matrix", Type: "Movie", ProductionYear: 1999, Genres: ["Action", "Sci-Fi"], OfficialRating: "R" },
       { Id: "2", Name: "Toy Story", Type: "Movie", ProductionYear: 1995, Genres: ["Animation", "Family"], OfficialRating: "G" },
@@ -449,25 +496,26 @@ class MockJellyfinClient {
     }
 
     // Apply filters if provided
-    if (input.filters) {
-      if (input.filters.include_item_types) {
-        items = items.filter(item => input.filters.include_item_types.includes(item.Type));
+    const filters = input.filters as Record<string, unknown> | undefined;
+    if (filters) {
+      if (Array.isArray(filters.include_item_types)) {
+        items = items.filter(item => (filters.include_item_types as string[]).includes(item.Type));
       }
 
-      if (input.filters.year_range) {
-        const [minYear, maxYear] = input.filters.year_range;
+      if (Array.isArray(filters.year_range) && filters.year_range.length === 2) {
+        const [minYear, maxYear] = filters.year_range as [number, number];
         items = items.filter(item => item.ProductionYear >= minYear && item.ProductionYear <= maxYear);
       }
 
-      if (input.filters.genres) {
+      if (Array.isArray(filters.genres)) {
         items = items.filter(item =>
-          input.filters.genres.some((genre: string) => item.Genres.includes(genre))
+          (filters.genres as string[]).some((genre: string) => item.Genres.includes(genre))
         );
       }
 
-      if (input.filters.text) {
+      if (typeof filters.text === 'string') {
         // Simple text matching for "dark" comedy
-        const searchText = input.filters.text.toLowerCase();
+        const searchText = filters.text.toLowerCase();
         items = items.filter(item =>
           item.Name.toLowerCase().includes(searchText) ||
           item.Genres.some((genre: string) => genre.toLowerCase().includes(searchText)) ||
@@ -477,19 +525,20 @@ class MockJellyfinClient {
     }
 
     // Generate more items if needed for limit testing, but respect filters
-    if (input.limit > items.length) {
+    const limit = typeof input.limit === 'number' ? input.limit : 24;
+    if (limit > items.length) {
       const additionalItems = [];
-      const targetYear = input.filters?.year_range ?
-        Math.floor((input.filters.year_range[0] + input.filters.year_range[1]) / 2) :
+      const targetYear = filters && Array.isArray(filters.year_range) && filters.year_range.length === 2 ?
+        Math.floor(((filters.year_range as [number, number])[0] + (filters.year_range as [number, number])[1]) / 2) :
         2000;
-      const targetGenres = input.filters?.genres || ["Drama"];
+      const targetGenres = (filters && Array.isArray(filters.genres) ? filters.genres : ["Drama"]) as string[];
 
-      for (let i = items.length; i < Math.min(input.limit * 2, 300); i++) {
+      for (let i = items.length; i < Math.min(limit * 2, 300); i++) {
         let year = targetYear;
 
         // If we have year_range filter, ensure generated items stay within range
-        if (input.filters?.year_range) {
-          const [minYear, maxYear] = input.filters.year_range;
+        if (filters && Array.isArray(filters.year_range) && filters.year_range.length === 2) {
+          const [minYear, maxYear] = filters.year_range as [number, number];
           const yearRange = maxYear - minYear;
           year = minYear + (i % (yearRange + 1));
         } else {
@@ -500,7 +549,7 @@ class MockJellyfinClient {
         additionalItems.push({
           Id: `generated_${i}`,
           Name: `Generated Item ${i}`,
-          Type: input.filters?.include_item_types?.[0] || "Movie",
+          Type: (filters && Array.isArray(filters.include_item_types) ? filters.include_item_types[0] : "Movie") as string,
           ProductionYear: year,
           Genres: targetGenres,
           OfficialRating: this.kidMode ? "PG" : "R"

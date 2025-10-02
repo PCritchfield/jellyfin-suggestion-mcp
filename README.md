@@ -156,7 +156,17 @@ It implements the contract defined in [`jellyfin-mcp.spec.yaml`](./jellyfin-mcp.
 
    You'll authenticate with username/password when Claude asks.
 
-   **Option B: Pre-configured Token**
+   **Option B: Environment Username/Password**
+
+   ```env
+   # .env file - username/password authentication
+   JELLYFIN_BASE_URL=http://your-jellyfin-server:8096
+   JELLYFIN_USERNAME=your-jellyfin-username
+   JELLYFIN_PASSWORD=your-jellyfin-password
+   JELLYFIN_PROTOCOL=https  # Optional: http or https (defaults to https)
+   ```
+
+   **Option C: Pre-configured Token**
 
    ```env
    # .env file - token-based authentication
@@ -234,12 +244,23 @@ export JELLYFIN_USER_ID="your-user-id-here"
 export JELLYFIN_TOKEN="your-api-token-here"
 ```
 
+*For username/password authentication:*
+
+```bash
+# Username/password environment setup
+export JELLYFIN_BASE_URL="your-jellyfin-server:8096"  # Without protocol
+export JELLYFIN_USERNAME="your-jellyfin-username"
+export JELLYFIN_PASSWORD="your-jellyfin-password"
+export JELLYFIN_PROTOCOL="https"  # Optional: http or https (defaults to https)
+```
+
 *For interactive authentication:*
 
 ```bash
 # Minimal environment setup
 export JELLYFIN_BASE_URL="http://your-jellyfin-server:8096"
-# No token needed - authenticate with username/password when prompted
+# No credentials needed - authenticate with username/password when prompted
+
 ```
 
 Then use a clean Claude config without embedded credentials:
@@ -271,10 +292,16 @@ cp claude_desktop_config.json claude_desktop_config.local.json
 - Keep only `JELLYFIN_BASE_URL`
 - Next Claude conversation will prompt for username/password
 
-*From interactive to token-based:*
+*From interactive to username/password environment:*
+
+- Add `JELLYFIN_USERNAME` and `JELLYFIN_PASSWORD` to environment
+- Optionally set `JELLYFIN_PROTOCOL` for HTTP/HTTPS preference
+- Restart Claude Desktop for automatic authentication
+
+*From username/password to token-based:*
 
 - Get API token from Jellyfin Dashboard → API Keys
-- Add `JELLYFIN_USER_ID` and `JELLYFIN_TOKEN` to environment
+- Replace `JELLYFIN_USERNAME` and `JELLYFIN_PASSWORD` with `JELLYFIN_USER_ID` and `JELLYFIN_TOKEN`
 - Restart Claude Desktop
 
 **🔑 API Token Setup:**
@@ -336,11 +363,33 @@ Invalid or expired token
 - Check that the API token hasn't been revoked in Jellyfin Dashboard
 - Verify `JELLYFIN_USER_ID` matches the token owner
 
+*Username/Password Environment Issues:*
+
+``` shell
+Environment username/password authentication failed
+```
+
+- Verify `JELLYFIN_USERNAME` and `JELLYFIN_PASSWORD` are correct
+- Check that the user account is enabled in Jellyfin
+- Ensure credentials match a valid Jellyfin user account
+
+*Protocol Configuration Issues:*
+
+``` shell
+Invalid JELLYFIN_PROTOCOL "xyz". Must be "http" or "https"
+```
+
+- Use only `http` or `https` for `JELLYFIN_PROTOCOL` (case insensitive)
+- If `JELLYFIN_BASE_URL` includes protocol, it takes precedence
+- Defaults to HTTPS if no protocol specified for security
+
 **Test your authentication:**
 
 ```bash
 yarn test:auth  # Tests both interactive and token-based auth
 yarn test:connection  # Basic connection test
+yarn tsx src/test-auth-env.ts  # Test environment variable authentication priority
+yarn tsx src/test-protocol.ts  # Test protocol configuration
 ```
 
 **Still stuck?** See [Quick Troubleshooting](#quick-troubleshooting) above or [open an issue](https://github.com/PCritchfield/jellyfin-suggestion-mcp/issues).
@@ -588,7 +637,6 @@ yarn build && yarn start    # Build and run production version
 - **Jellyfin Integration** - Read-only API client with authentication
 - **Spec Validation** - Machine-readable `jellyfin-mcp.spec.yaml`
 - **Test Harness** - Automated spec acceptance testing
-
 ---
 
 ### Code Quality Standards

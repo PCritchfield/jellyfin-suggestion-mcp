@@ -1,0 +1,21 @@
+{
+  "id": "approval_1759239859831_krlfw2hvg",
+  "title": "Username Authentication Requirements - Phase 1",
+  "filePath": ".spec-workflow/specs/username-authentication/requirements.md",
+  "type": "document",
+  "status": "needs-revision",
+  "createdAt": "2025-09-30T13:44:19.831Z",
+  "category": "spec",
+  "categoryName": "username-authentication",
+  "response": "Feedback Summary (1 comments):\n\nGeneral Comments:\n1. Authentication can take place over http or https. Use an MCP config flag for `protocol` that can take `HTTP` or `HTTPS` as an argument.\n\nAllow for ENV variables of JELLYFIN_USERNAME and JELLYFIN_PASSWORD for authentication. If not found use the authentication prompt tool.\n\n",
+  "annotations": "{\n  \"decision\": \"needs-revision\",\n  \"comments\": [\n    {\n      \"type\": \"general\",\n      \"comment\": \"Authentication can take place over http or https. Use an MCP config flag for `protocol` that can take `HTTP` or `HTTPS` as an argument.\\n\\nAllow for ENV variables of JELLYFIN_USERNAME and JELLYFIN_PASSWORD for authentication. If not found use the authentication prompt tool.\",\n      \"timestamp\": \"2025-09-30T23:55:42.549Z\",\n      \"id\": \"comment_1759276542549_88v1fuz0s\"\n    }\n  ],\n  \"summary\": \"Feedback Summary (1 comments):\\n\\nGeneral Comments:\\n1. Authentication can take place over http or https. Use an MCP config flag for `protocol` that can take `HTTP` or `HTTPS` as an argument.\\n\\nAllow for ENV variables of JELLYFIN_USERNAME and JELLYFIN_PASSWORD for authentication. If not found use the authentication prompt tool.\\n\\n\",\n  \"timestamp\": \"2025-09-30T23:56:06.781Z\"\n}",
+  "respondedAt": "2025-09-30T23:56:06.732Z",
+  "comments": [
+    {
+      "type": "general",
+      "comment": "Authentication can take place over http or https. Use an MCP config flag for `protocol` that can take `HTTP` or `HTTPS` as an argument.\n\nAllow for ENV variables of JELLYFIN_USERNAME and JELLYFIN_PASSWORD for authentication. If not found use the authentication prompt tool.",
+      "timestamp": "2025-09-30T23:55:42.549Z",
+      "id": "comment_1759276542549_88v1fuz0s"
+    }
+  ]
+}

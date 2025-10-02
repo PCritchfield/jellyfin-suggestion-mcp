@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/username-authentication/design.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-01T00:07:15.859Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759277235848_x706q3ylj",
+      "approvalTitle": "Username Authentication Design Document - Phase 2"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-10-01T16:01:14.491Z",
+      "trigger": "approved",
+      "approvalId": "approval_1759277235848_x706q3ylj",
+      "approvalTitle": "Username Authentication Design Document - Phase 2"
+    }
+  ]
+}

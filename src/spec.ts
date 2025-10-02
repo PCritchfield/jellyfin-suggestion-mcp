@@ -2,16 +2,24 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import YAML from "yaml";
+import { fileURLToPath } from "url";
 
 export interface LoadedSpec {
   yamlText: string;
-  json: any;
+  json: Record<string, unknown>;
   etag: string;
   mtimeMs: number;
 }
 let cached: LoadedSpec | null = null;
 
-const DEFAULT_SPEC = path.resolve(process.env.SPEC_PATH ?? "./jellyfin-mcp.spec.yaml");
+// Get the directory of the current module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Resolve spec path relative to the package root (one level up from dist/)
+const DEFAULT_SPEC = path.resolve(
+  process.env.SPEC_PATH ?? path.join(__dirname, "..", "jellyfin-mcp.spec.yaml")
+);
 
 export function loadSpec(specPath = DEFAULT_SPEC): LoadedSpec {
   const p = path.resolve(specPath);
@@ -25,12 +33,14 @@ export function loadSpec(specPath = DEFAULT_SPEC): LoadedSpec {
   return cached;
 }
 
-export function getSpecSection(sectionPath: string, spec?: LoadedSpec): any {
+export function getSpecSection(sectionPath: string, spec?: LoadedSpec): unknown {
   const s = spec ?? loadSpec();
   const parts = sectionPath.split("/").map(x => x.trim()).filter(Boolean);
-  let node: any = s.json;
+  let node: unknown = s.json;
   for (const part of parts) {
-    if (node && typeof node === "object" && part in node) node = node[part];
+    if (node && typeof node === "object" && part in node) {
+      node = (node as Record<string, unknown>)[part];
+    }
     else if (Array.isArray(node)) {
       const idx = Number(part);
       if (!Number.isInteger(idx) || idx < 0 || idx >= node.length) return undefined;

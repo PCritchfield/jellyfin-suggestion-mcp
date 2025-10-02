@@ -13,26 +13,26 @@ async function main() {
   try {
     // Create test harness (without MCP server for now)
     const harness = new SpecTestHarness();
-    
+
     // Show available tests
     const testCases = harness.getTestCases();
     console.log(`📋 Found ${testCases.length} test cases in spec:`);
     testCases.forEach((test, i) => {
       console.log(`  ${i + 1}. ${test.name} (${test.call})`);
     });
-    
+
     console.log("\n⚠️  Note: MCP server not implemented yet - tests will use mock responses\n");
-    
+
     // Run all tests
     const results = await harness.runAllTests();
-    
+
     // Summary
     const passed = results.filter(r => r.passed).length;
     const failed = results.filter(r => !r.passed).length;
-    
+
     console.log("\n" + "=".repeat(50));
     console.log(`📊 Final Results: ${passed} passed, ${failed} failed`);
-    
+
     if (failed > 0) {
       console.log("\n❌ Failed tests:");
       results.filter(r => !r.passed).forEach(result => {
@@ -43,10 +43,10 @@ async function main() {
         }
       });
     }
-    
+
     // Exit with appropriate code
     process.exit(failed > 0 ? 1 : 0);
-    
+
   } catch (error) {
     console.error("❌ Test runner failed:", error);
     process.exit(1);
