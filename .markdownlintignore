@@ -1,0 +1,22 @@
+# Ignore IDE and system-generated files
+**/.codeium/**
+**/windsurf/**
+**/brain/**
+**/code_tracker/**
+
+# Ignore node_modules
+node_modules/
+
+# Ignore specific temp files
+*.tmp.md
+*.temp.md
+
+# Only lint important documentation files
+# Uncomment to be more restrictive:
+# *
+# !README.md
+# !SETUP.md
+# !SECURITY.md
+# !AUTHENTICATION.md
+# !PRD.md
+# !CHANGELOG.md

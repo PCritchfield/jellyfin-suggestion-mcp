@@ -1,0 +1,27 @@
+{
+  "id": "approval_1759107309843_t00nfibkk",
+  "title": "Tech Steering Document - TypeScript MCP Server Architecture",
+  "filePath": ".spec-workflow/steering/tech.md",
+  "type": "document",
+  "status": "needs-revision",
+  "createdAt": "2025-09-29T00:55:09.843Z",
+  "category": "steering",
+  "categoryName": "steering",
+  "response": "Feedback Summary (1 comments):\n\nSpecific Text Comments:\n1. \"## Known Limitations\": Another limitation is authentication. API keys are only available to admins, Auth should use UN/PW for non-admin users to leverage the MCP\n",
+  "annotations": "{\n  \"decision\": \"needs-revision\",\n  \"comments\": [\n    {\n      \"type\": \"selection\",\n      \"comment\": \"Another limitation is authentication. API keys are only available to admins, Auth should use UN/PW for non-admin users to leverage the MCP\",\n      \"timestamp\": \"2025-09-29T01:00:01.273Z\",\n      \"selectedText\": \"## Known Limitations\",\n      \"highlightColor\": {\n        \"bg\": \"rgba(255, 235, 59, 0.3)\",\n        \"border\": \"#FFEB3B\",\n        \"name\": \"#ffeb3b\"\n      },\n      \"id\": \"comment_1759107601273_s2pa6nodi\"\n    }\n  ],\n  \"summary\": \"Feedback Summary (1 comments):\\n\\nSpecific Text Comments:\\n1. \\\"## Known Limitations\\\": Another limitation is authentication. API keys are only available to admins, Auth should use UN/PW for non-admin users to leverage the MCP\\n\",\n  \"timestamp\": \"2025-09-29T01:00:38.613Z\"\n}",
+  "respondedAt": "2025-09-29T01:00:38.088Z",
+  "comments": [
+    {
+      "type": "selection",
+      "comment": "Another limitation is authentication. API keys are only available to admins, Auth should use UN/PW for non-admin users to leverage the MCP",
+      "timestamp": "2025-09-29T01:00:01.273Z",
+      "selectedText": "## Known Limitations",
+      "highlightColor": {
+        "bg": "rgba(255, 235, 59, 0.3)",
+        "border": "#FFEB3B",
+        "name": "#ffeb3b"
+      },
+      "id": "comment_1759107601273_s2pa6nodi"
+    }
+  ]
+}

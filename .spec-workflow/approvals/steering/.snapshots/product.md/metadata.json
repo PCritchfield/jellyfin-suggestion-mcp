@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/steering/product.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-09-29T00:35:08.485Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759106108475_tb6nfirzm",
+      "approvalTitle": "Product Steering Document - Jellyfin MCP Server Vision & Goals"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-09-29T00:53:37.443Z",
+      "trigger": "approved",
+      "approvalId": "approval_1759106108475_tb6nfirzm",
+      "approvalTitle": "Product Steering Document - Jellyfin MCP Server Vision & Goals"
+    }
+  ]
+}

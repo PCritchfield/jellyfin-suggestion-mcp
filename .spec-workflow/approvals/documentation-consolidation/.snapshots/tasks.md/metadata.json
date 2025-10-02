@@ -1,0 +1,22 @@
+{
+  "filePath": ".spec-workflow/specs/documentation-consolidation/tasks.md",
+  "currentVersion": 2,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-09-29T01:19:56.903Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759108796896_v1smy7l52",
+      "approvalTitle": "Documentation Consolidation Tasks - Implementation Breakdown"
+    },
+    {
+      "version": 2,
+      "filename": "snapshot-002.json",
+      "timestamp": "2025-09-29T01:20:36.875Z",
+      "trigger": "approved",
+      "approvalId": "approval_1759108796896_v1smy7l52",
+      "approvalTitle": "Documentation Consolidation Tasks - Implementation Breakdown"
+    }
+  ]
+}
