@@ -13,7 +13,7 @@ export interface AuthSession {
 
 export interface PendingRequest {
   toolName: string;
-  arguments: any;
+  arguments: Record<string, unknown>;
   timestamp: Date;
 }
 
@@ -35,6 +35,9 @@ export class AuthenticationManager {
     this.http = axios.create({
       baseURL: this.baseUrl,
       timeout: 10000,
+      headers: {
+        "X-Emby-Authorization": 'MediaBrowser Client="Jellyfin MCP", Device="MCP Server", DeviceId="jellyfin-mcp-001", Version="1.0.0"',
+      },
     });
   }
 
@@ -77,8 +80,8 @@ export class AuthenticationManager {
         );
         console.log("✅ Successfully authenticated using environment username/password");
         return session;
-      } catch (error: any) {
-        console.error("⚠️  Environment username/password authentication failed:", error.message);
+      } catch (error: unknown) {
+        console.error("⚠️  Environment username/password authentication failed:", error instanceof Error ? error.message : String(error));
       }
     }
 
@@ -128,15 +131,16 @@ export class AuthenticationManager {
 
       this.session = session;
       return session;
-    } catch (error: any) {
-      if (error.response?.status === 401) {
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { status?: number }; code?: string; message?: string };
+      if (axiosError.response?.status === 401) {
         throw new Error("Invalid username or password");
-      } else if (error.response?.status === 403) {
+      } else if (axiosError.response?.status === 403) {
         throw new Error("User account is disabled or not allowed to sign in");
-      } else if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
+      } else if (axiosError.code === "ECONNREFUSED" || axiosError.code === "ENOTFOUND") {
         throw new Error(`Cannot connect to Jellyfin server at ${this.baseUrl}`);
       } else {
-        throw new Error(`Authentication failed: ${error.message}`);
+        throw new Error(`Authentication failed: ${axiosError.message || String(error)}`);
       }
     }
   }
@@ -181,7 +185,7 @@ export class AuthenticationManager {
   /**
    * Store a pending request that triggered authentication
    */
-  storePendingRequest(toolName: string, args: any): void {
+  storePendingRequest(toolName: string, args: Record<string, unknown>): void {
     this.pendingRequest = {
       toolName,
       arguments: args,

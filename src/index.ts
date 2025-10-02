@@ -20,7 +20,7 @@ import {
   GetStreamInfoInput,
   AuthenticateUserInput,
 } from "./schema.js";
-import { simpleRank } from "./ranker.js";
+import { simpleRank, RankableItem } from "./ranker.js";
 import { getLibrarySnapshot } from "./resources.js";
 
 // Helper function for environment variables (now optional)
@@ -285,12 +285,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 
 // Tool handler implementations with authentication guards
-async function handleListItems(args: any) {
+async function handleListItems(args: unknown) {
   try {
     const input = ListItemsInput.parse(args);
 
     // Transform MCP input to Jellyfin API parameters
-    const params: Record<string, any> = {
+    const params: Record<string, unknown> = {
       Recursive: true,
       Limit: Math.min(input.limit, 200), // Enforce hard limit
       SortBy: mapSortToJellyfin(input.sort),
@@ -313,16 +313,18 @@ async function handleListItems(args: any) {
     }
 
     const response = await jellyfinClient.listItems(params);
+    const responseItems = Array.isArray(response.Items) ? response.Items : [];
+    const totalRecords = typeof response.TotalRecordCount === 'number' ? response.TotalRecordCount : 0;
 
     return {
       content: [
         {
           type: "text",
           text: JSON.stringify({
-            items: response.Items || [],
-            total: response.TotalRecordCount || 0,
-            next_cursor: response.Items && response.Items.length === input.limit ?
-              String((params.StartIndex || 0) + input.limit) : undefined,
+            items: responseItems,
+            total: totalRecords,
+            next_cursor: responseItems.length === input.limit ?
+              String((typeof params.StartIndex === 'number' ? params.StartIndex : 0) + input.limit) : undefined,
           }, null, 2),
         },
       ],
@@ -330,26 +332,26 @@ async function handleListItems(args: any) {
   } catch (error) {
     if (error instanceof AuthenticationRequiredError) {
       // Store the pending request
-      jellyfinClient.getAuthManager().storePendingRequest("list_items", args);
+      jellyfinClient.getAuthManager().storePendingRequest("list_items", args as Record<string, unknown>);
       throw new Error("Authentication required. Please use the authenticate_user tool to sign in, then your request will be automatically retried.");
     }
     throw error;
   }
 }
 
-async function handleSearchItems(args: any) {
+async function handleSearchItems(args: unknown) {
   try {
     const input = SearchItemsInput.parse(args);
 
     // For search, we'll use both search hints and filtered listing
-    let items: any[] = [];
+    let items: unknown[] = [];
 
     if (input.query) {
       const searchResponse = await jellyfinClient.searchHints(input.query, input.limit);
-      items = searchResponse.SearchHints || [];
+      items = Array.isArray(searchResponse.SearchHints) ? searchResponse.SearchHints : [];
     } else {
       // If no query, fall back to filtered listing
-      const params: Record<string, any> = {
+      const params: Record<string, unknown> = {
         Recursive: true,
         Limit: Math.min(input.limit, 100),
       };
@@ -359,7 +361,7 @@ async function handleSearchItems(args: any) {
       }
 
       const response = await jellyfinClient.listItems(params);
-      items = response.Items || [];
+      items = Array.isArray(response.Items) ? response.Items : [];
     }
 
     return {
@@ -376,14 +378,14 @@ async function handleSearchItems(args: any) {
     };
   } catch (error) {
     if (error instanceof AuthenticationRequiredError) {
-      jellyfinClient.getAuthManager().storePendingRequest("search_items", args);
+      jellyfinClient.getAuthManager().storePendingRequest("search_items", args as Record<string, unknown>);
       throw new Error("Authentication required. Please use the authenticate_user tool to sign in, then your request will be automatically retried.");
     }
     throw error;
   }
 }
 
-async function handleNextUp(args: any) {
+async function handleNextUp(args: unknown) {
   try {
     const input = NextUpInput.parse(args);
 
@@ -402,20 +404,21 @@ async function handleNextUp(args: any) {
     };
   } catch (error) {
     if (error instanceof AuthenticationRequiredError) {
-      jellyfinClient.getAuthManager().storePendingRequest("next_up", args);
+      jellyfinClient.getAuthManager().storePendingRequest("next_up", args as Record<string, unknown>);
       throw new Error("Authentication required. Please use the authenticate_user tool to sign in, then your request will be automatically retried.");
     }
     throw error;
   }
 }
 
-async function handleRecommendSimilar(args: any) {
+async function handleRecommendSimilar(args: unknown) {
   try {
     const input = RecommendSimilarInput.parse(args);
 
-    let seedItem: any = null;
+    let seedItem: RankableItem | undefined = undefined;
     if (input.seed_item_id) {
-      seedItem = await jellyfinClient.item(input.seed_item_id);
+      const itemData = await jellyfinClient.item(input.seed_item_id);
+      seedItem = itemData as unknown as RankableItem;
     }
 
     // Get candidate items from the library
@@ -425,17 +428,17 @@ async function handleRecommendSimilar(args: any) {
       IncludeItemTypes: "Movie,Series",
     });
 
-    const candidates = candidatesResponse.Items || [];
+    const candidates = (Array.isArray(candidatesResponse.Items) ? candidatesResponse.Items : []) as RankableItem[];
 
     // Use our ranking algorithm
     const recommendations = simpleRank(candidates, {
-      seed: seedItem || undefined,
+      seed: seedItem,
       mood: input.mood || undefined,
     });
 
     // Transform to expected format with rationale
     const items = recommendations.slice(0, input.limit).map(rec => {
-      const item = candidates.find((c: any) => c.Id === rec.itemId);
+      const item = candidates.find((c: RankableItem) => c.Id === rec.itemId);
       return {
         ...item,
         score: rec.score,
@@ -455,22 +458,24 @@ async function handleRecommendSimilar(args: any) {
     };
   } catch (error) {
     if (error instanceof AuthenticationRequiredError) {
-      jellyfinClient.getAuthManager().storePendingRequest("recommend_similar", args);
+      jellyfinClient.getAuthManager().storePendingRequest("recommend_similar", args as Record<string, unknown>);
       throw new Error("Authentication required. Please use the authenticate_user tool to sign in, then your request will be automatically retried.");
     }
     throw error;
   }
 }
 
-async function handleGetStreamInfo(args: any) {
+async function handleGetStreamInfo(args: unknown) {
   try {
     const input = GetStreamInfoInput.parse(args);
 
     const streamInfo = await jellyfinClient.streamInfo(input.item_id);
 
     // Extract basic playback info
-    const canDirectPlay = streamInfo.MediaSources?.[0]?.SupportsDirectStream || false;
-    const container = streamInfo.MediaSources?.[0]?.Container || "unknown";
+    const mediaSources = Array.isArray(streamInfo.MediaSources) ? streamInfo.MediaSources : [];
+    const firstSource = mediaSources[0] as Record<string, unknown> | undefined;
+    const canDirectPlay = firstSource?.SupportsDirectStream === true;
+    const container = typeof firstSource?.Container === 'string' ? firstSource.Container : "unknown";
 
     return {
       content: [
@@ -485,7 +490,7 @@ async function handleGetStreamInfo(args: any) {
     };
   } catch (error) {
     if (error instanceof AuthenticationRequiredError) {
-      jellyfinClient.getAuthManager().storePendingRequest("get_stream_info", args);
+      jellyfinClient.getAuthManager().storePendingRequest("get_stream_info", args as Record<string, unknown>);
       throw new Error("Authentication required. Please use the authenticate_user tool to sign in, then your request will be automatically retried.");
     }
     throw error;
@@ -514,36 +519,37 @@ function mapViewToItemTypes(view: string): string {
   return mapping[view] || "";
 }
 
-function applyFiltersToParams(params: Record<string, any>, filters: any) {
-  if (filters.include_item_types) {
-    params.IncludeItemTypes = filters.include_item_types.join(",");
+function applyFiltersToParams(params: Record<string, unknown>, filters: Record<string, unknown>) {
+  if (Array.isArray(filters.include_item_types)) {
+    params.IncludeItemTypes = (filters.include_item_types as string[]).join(",");
   }
 
-  if (filters.genres) {
-    params.Genres = filters.genres.join(",");
+  if (Array.isArray(filters.genres)) {
+    params.Genres = (filters.genres as string[]).join(",");
   }
 
-  if (filters.people) {
-    params.Person = filters.people.join(",");
+  if (Array.isArray(filters.people)) {
+    params.Person = (filters.people as string[]).join(",");
   }
 
-  if (filters.studios) {
-    params.Studios = filters.studios.join(",");
+  if (Array.isArray(filters.studios)) {
+    params.Studios = (filters.studios as string[]).join(",");
   }
 
-  if (filters.year_range) {
-    const [minYear, maxYear] = filters.year_range;
-    params.Years = `${minYear},${maxYear}`;
+  if (Array.isArray(filters.year_range) && filters.year_range.length === 2) {
+    const [minYear, maxYear] = filters.year_range as [number, number];
+    params.MinPremiereDate = `${minYear}-01-01`;
+    params.MaxPremiereDate = `${maxYear}-12-31`;
   }
 
-  if (filters.runtime_minutes) {
-    const [minRuntime, maxRuntime] = filters.runtime_minutes;
+  if (Array.isArray(filters.runtime_minutes) && filters.runtime_minutes.length === 2) {
+    const [minRuntime, maxRuntime] = filters.runtime_minutes as [number, number];
     params.MinRuntime = minRuntime;
     params.MaxRuntime = maxRuntime;
   }
 
   if (filters.kid_safe !== undefined) {
-    params.MaxOfficialRating = filters.kid_safe ? "PG" : undefined;
+    params.IsKids = filters.kid_safe;
   }
 
   if (filters.text) {
@@ -552,7 +558,7 @@ function applyFiltersToParams(params: Record<string, any>, filters: any) {
 }
 
 // Authentication tool handlers
-async function handleAuthenticateUser(args: any) {
+async function handleAuthenticateUser(args: unknown) {
   try {
     const input = AuthenticateUserInput.parse(args);
     const { username, password } = input;
@@ -641,9 +647,10 @@ async function handleAuthenticateUser(args: any) {
   }
 }
 
-async function handleSetToken(args: any) {
+async function handleSetToken(args: unknown) {
   try {
-    const { access_token, user_id } = args;
+    const argsObj = args as { access_token?: string; user_id?: string };
+    const { access_token, user_id } = argsObj;
 
     if (!access_token) {
       throw new Error("Access token is required");
@@ -682,7 +689,7 @@ async function handleSetToken(args: any) {
 }
 
 // Helper function to retry pending requests
-async function retryPendingRequest(pendingRequest: any) {
+async function retryPendingRequest(pendingRequest: { toolName: string; arguments: Record<string, unknown> }) {
   switch (pendingRequest.toolName) {
     case "list_items":
       return await handleListItems(pendingRequest.arguments);

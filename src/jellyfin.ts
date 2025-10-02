@@ -45,17 +45,19 @@ export class JellyfinClient {
   /**
    * Make authenticated request
    */
-  private async authenticatedRequest<T = any>(
+  private async authenticatedRequest<T = unknown>(
     method: 'get' | 'post' | 'put' | 'delete',
     url: string,
-    options: { params?: any; data?: any } = {}
+    options: { params?: Record<string, unknown>; data?: unknown } = {}
   ): Promise<T> {
     const session = await this.getSession();
 
-    const headers = {
+    const headers: Record<string, string> = {
       "X-MediaBrowser-Token": session.accessToken,
-      ...(options.data && { "Content-Type": "application/json" }),
     };
+    if (options.data) {
+      headers["Content-Type"] = "application/json";
+    }
 
     let response;
     if (method === 'get') {
@@ -71,34 +73,34 @@ export class JellyfinClient {
     return response.data;
   }
 
-  async listItems(params: Record<string, any>): Promise<any> {
+  async listItems(params: Record<string, unknown>): Promise<Record<string, unknown>> {
     const session = await this.getSession();
     return this.authenticatedRequest('get', `/Users/${encodeURIComponent(session.userId)}/Items`, { params });
   }
 
-  async searchHints(query: string, limit = 10): Promise<any> {
+  async searchHints(query: string, limit = 10): Promise<Record<string, unknown>> {
     const session = await this.getSession();
     const params = { SearchTerm: query, Limit: limit, UserId: session.userId };
     return this.authenticatedRequest('get', `/Search/Hints`, { params });
   }
 
-  async nextUp(seriesId?: string, limit = 10): Promise<any> {
+  async nextUp(seriesId?: string, limit = 10): Promise<Record<string, unknown>> {
     const session = await this.getSession();
-    const params: Record<string, any> = { UserId: session.userId, Limit: limit };
+    const params: Record<string, unknown> = { UserId: session.userId, Limit: limit };
     if (seriesId) params.SeriesId = seriesId;
     return this.authenticatedRequest('get', `/Shows/NextUp`, { params });
   }
 
-  async sessions(): Promise<any> {
+  async sessions(): Promise<Record<string, unknown>> {
     return this.authenticatedRequest('get', `/Sessions`);
   }
 
-  async item(itemId: string): Promise<any> {
+  async item(itemId: string): Promise<Record<string, unknown>> {
     const session = await this.getSession();
     return this.authenticatedRequest('get', `/Users/${encodeURIComponent(session.userId)}/Items/${encodeURIComponent(itemId)}`);
   }
 
-  async streamInfo(itemId: string): Promise<any> {
+  async streamInfo(itemId: string): Promise<Record<string, unknown>> {
     const session = await this.getSession();
     const params = { UserId: session.userId };
     return this.authenticatedRequest('get', `/Items/${encodeURIComponent(itemId)}/PlaybackInfo`, { params });

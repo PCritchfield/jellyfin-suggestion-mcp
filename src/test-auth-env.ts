@@ -184,16 +184,17 @@ async function testEnvironmentAuth() {
     console.log("   3. Environment username (JELLYFIN_USERNAME + JELLYFIN_PASSWORD)");
     console.log("   4. Interactive authentication prompt");
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("❌ Environment authentication test failed");
 
-    if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
+    const errObj = error as { code?: string };
+    if (errObj.code === "ECONNREFUSED" || errObj.code === "ENOTFOUND") {
       console.error("\n🔧 Connection Error:");
       console.error("   Cannot connect to Jellyfin server");
       console.error("   Check that JELLYFIN_BASE_URL is correct and server is running");
       console.error("   Current URL:", baseUrl);
     } else {
-      console.error("\n📋 Error Details:", error.message);
+      console.error("\n📋 Error Details:", error instanceof Error ? error.message : String(error));
     }
 
     console.error("\n🔧 Troubleshooting:");

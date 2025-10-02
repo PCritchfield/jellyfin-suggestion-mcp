@@ -39,27 +39,29 @@ async function getUsers() {
 
     console.log(`✅ Found ${users.length} user(s):\n`);
 
-    users.forEach((user: any, index: number) => {
+    users.forEach((user: Record<string, unknown>, index: number) => {
+      const policy = user.Policy as Record<string, unknown> | undefined;
       console.log(`${index + 1}. ${user.Name}`);
       console.log(`   ID: ${user.Id}`);
-      console.log(`   Admin: ${user.Policy?.IsAdministrator ? 'Yes' : 'No'}`);
-      console.log(`   Disabled: ${user.Policy?.IsDisabled ? 'Yes' : 'No'}`);
+      console.log(`   Admin: ${policy?.IsAdministrator ? 'Yes' : 'No'}`);
+      console.log(`   Disabled: ${policy?.IsDisabled ? 'Yes' : 'No'}`);
       console.log("");
     });
 
     console.log("💡 Copy the ID of your user and update JELLYFIN_USER_ID in your .env file");
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("❌ Failed to fetch users");
 
-    if (error.response?.status === 401) {
+    const axiosError = error as { response?: { status?: number; statusText?: string }; message?: string };
+    if (axiosError.response?.status === 401) {
       console.error("   Authentication failed - check your JELLYFIN_TOKEN");
-    } else if (error.response?.status === 403) {
+    } else if (axiosError.response?.status === 403) {
       console.error("   Access denied - your token may not have admin privileges");
-    } else if (error.response) {
-      console.error(`   HTTP ${error.response.status}: ${error.response.statusText}`);
+    } else if (axiosError.response) {
+      console.error(`   HTTP ${axiosError.response.status}: ${axiosError.response.statusText}`);
     } else {
-      console.error(`   ${error.message}`);
+      console.error(`   ${axiosError.message || String(error)}`);
     }
 
     console.error("\n🔧 Make sure:");
