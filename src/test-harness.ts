@@ -1,4 +1,5 @@
 import { loadSpec, getSpecSection } from "./spec.js";
+import { z } from "zod";
 
 export interface TestCase {
   name: string;
@@ -9,6 +10,19 @@ export interface TestCase {
     policy?: string;
   };
 }
+
+/**
+ * Zod schema for validating test case structure from spec file
+ */
+const TestCaseSchema = z.object({
+  name: z.string().min(1, "Test case must have a non-empty name"),
+  call: z.string().min(1, "Test case must specify a tool to call"),
+  input: z.record(z.string(), z.unknown()).optional().default({}),
+  expect: z.record(z.string(), z.unknown()),
+  preconditions: z.object({
+    policy: z.string().optional(),
+  }).optional(),
+});
 
 export interface TestResult {
   name: string;
@@ -29,23 +43,40 @@ export class SpecTestHarness {
   }
 
   /**
-   * Load all test cases from the spec
+   * Load all test cases from the spec with validation
+   * @throws {Error} If any test case has invalid structure
    */
   getTestCases(): TestCase[] {
     const tests = getSpecSection("tests") || [];
-    if (!Array.isArray(tests)) return [];
-    return tests.map((test: Record<string, unknown>) => {
-      const testCase: TestCase = {
-        name: test.name as string,
-        call: test.call as string,
-        input: test.input as Record<string, unknown>,
-        expect: test.expect as Record<string, unknown>,
-      };
-      if (test.preconditions) {
-        testCase.preconditions = test.preconditions as { policy?: string };
+    if (!Array.isArray(tests)) {
+      console.warn("No test cases found in spec or 'tests' section is not an array");
+      return [];
+    }
+
+    const validatedTests: TestCase[] = [];
+    const errors: string[] = [];
+
+    tests.forEach((test: unknown, index: number) => {
+      try {
+        // Validate test structure using Zod schema
+        const validated = TestCaseSchema.parse(test);
+        validatedTests.push(validated as TestCase);
+      } catch (error) {
+        const errorMessage = error instanceof z.ZodError
+          ? `Test case ${index + 1}: ${error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ')}`
+          : `Test case ${index + 1}: ${error instanceof Error ? error.message : String(error)}`;
+        errors.push(errorMessage);
       }
-      return testCase;
     });
+
+    // If there are validation errors, report them all at once
+    if (errors.length > 0) {
+      const errorSummary = `Found ${errors.length} invalid test case(s) in spec:\n${errors.map(e => `  - ${e}`).join('\n')}`;
+      console.error(`\n❌ Test Case Validation Errors:\n${errorSummary}\n`);
+      throw new Error(errorSummary);
+    }
+
+    return validatedTests;
   }
 
   /**

@@ -242,80 +242,56 @@ async function testProtocolConfig() {
 }
 
 /**
- * Test URL construction by creating a child process that loads the module
- * This allows us to test the buildJellyfinUrl function indirectly
+ * Test URL construction by spawning the test helper module
+ * 
+ * Security: Uses spawn with separate helper module to avoid command injection
+ * Maintainability: Helper module is properly typed and reusable across tests
  */
 async function testUrlConstruction(baseUrl: string, protocol: string | undefined): Promise<string> {
-  // Set environment variables for the test
-  process.env.JELLYFIN_BASE_URL = baseUrl;
-  if (protocol !== undefined) {
-    process.env.JELLYFIN_PROTOCOL = protocol;
-  } else {
-    delete process.env.JELLYFIN_PROTOCOL;
-  }
+  const path = await import("path");
+  const { fileURLToPath } = await import("url");
+  const { spawn } = await import("child_process");
 
-  // Since we can't directly import buildJellyfinUrl (it's not exported),
-  // we'll test by creating a simple module evaluation
-  const moduleCode = `
-    import "dotenv/config";
+  // Get the directory of the current module
+  const currentDir = path.dirname(fileURLToPath(import.meta.url));
+  const helperPath = path.join(currentDir, "test-helpers", "test-url-builder.ts");
 
-    function getEnv(key) {
-      return process.env[key];
+  return new Promise<string>((resolve, reject) => {
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      JELLYFIN_BASE_URL: baseUrl,
+    };
+
+    if (protocol !== undefined) {
+      env.JELLYFIN_PROTOCOL = protocol;
     }
 
-    function mustEnv(key) {
-      const value = process.env[key];
-      if (!value) {
-        throw new Error(\`Missing required environment variable: \${key}\`);
-      }
-      return value;
-    }
+    // Execute the helper module using node with tsx loader
+    const child = spawn("node", ["--import", "tsx/esm", helperPath], { env });
 
-    function buildJellyfinUrl() {
-      const rawBaseUrl = mustEnv("JELLYFIN_BASE_URL");
-      const protocol = getEnv("JELLYFIN_PROTOCOL");
+    let stdout = "";
+    let stderr = "";
 
-      try {
-        const url = new URL(rawBaseUrl);
-        return rawBaseUrl;
-      } catch {
-        if (protocol) {
-          const normalizedProtocol = protocol.toLowerCase();
-
-          if (normalizedProtocol !== "http" && normalizedProtocol !== "https") {
-            throw new Error(\`Invalid JELLYFIN_PROTOCOL "\${protocol}". Must be "http" or "https"\`);
-          }
-
-          return \`\${normalizedProtocol}://\${rawBaseUrl}\`;
-        }
-
-        return \`https://\${rawBaseUrl}\`;
-      }
-    }
-
-    try {
-      console.log(buildJellyfinUrl());
-    } catch (error) {
-      console.error(error.message);
-      process.exit(1);
-    }
-  `;
-
-  // Use dynamic import to evaluate the URL building logic
-  const { exec } = await import("child_process");
-  const util = await import("util");
-  const execAsync = util.promisify(exec);
-
-  try {
-    const result = await execAsync(`node -e "${moduleCode.replace(/"/g, '\\"')}"`, {
-      env: { ...process.env, JELLYFIN_BASE_URL: baseUrl, JELLYFIN_PROTOCOL: protocol }
+    child.stdout.on("data", (data) => {
+      stdout += data.toString();
     });
 
-    return result.stdout.trim();
-  } catch (error: unknown) {
-    const errorObj = error as { stderr?: string; message?: string };
-    throw new Error(errorObj.stderr ? errorObj.stderr.trim() : errorObj.message || String(error));
-  }
+    child.stderr.on("data", (data) => {
+      stderr += data.toString();
+    });
+
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve(stdout.trim());
+      } else {
+        reject(new Error(stderr.trim() || `Process exited with code ${code}`));
+      }
+    });
+
+    child.on("error", (err) => {
+      reject(err);
+    });
+  });
 }
 
 // Run if this file is executed directly

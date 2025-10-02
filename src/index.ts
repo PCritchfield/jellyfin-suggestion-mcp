@@ -538,8 +538,13 @@ function applyFiltersToParams(params: Record<string, unknown>, filters: Record<s
 
   if (Array.isArray(filters.year_range) && filters.year_range.length === 2) {
     const [minYear, maxYear] = filters.year_range as [number, number];
-    params.MinPremiereDate = `${minYear}-01-01`;
-    params.MaxPremiereDate = `${maxYear}-12-31`;
+    // Years parameter filters by production year (not premiere date)
+    // Requires comma-delimited list of specific years
+    const years: number[] = [];
+    for (let year = minYear; year <= maxYear; year++) {
+      years.push(year);
+    }
+    params.Years = years.join(",");
   }
 
   if (Array.isArray(filters.runtime_minutes) && filters.runtime_minutes.length === 2) {
@@ -548,8 +553,11 @@ function applyFiltersToParams(params: Record<string, unknown>, filters: Record<s
     params.MaxRuntime = maxRuntime;
   }
 
-  if (filters.kid_safe !== undefined) {
-    params.IsKids = filters.kid_safe;
+  if (filters.kid_safe !== undefined && filters.kid_safe === true) {
+    // MaxOfficialRating filters by maximum content rating
+    // TV-PG (Parental Guidance) is appropriate for kid-safe content
+    // This allows G, TV-Y, TV-Y7, TV-G, TV-PG and excludes TV-14, TV-MA, R, etc.
+    params.MaxOfficialRating = "TV-PG";
   }
 
   if (filters.text) {

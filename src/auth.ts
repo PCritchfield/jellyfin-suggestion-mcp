@@ -78,7 +78,7 @@ export class AuthenticationManager {
           process.env.JELLYFIN_USERNAME,
           process.env.JELLYFIN_PASSWORD
         );
-        console.log("✅ Successfully authenticated using environment username/password");
+        console.error("✅ Successfully authenticated using environment username/password");
         return session;
       } catch (error: unknown) {
         console.error("⚠️  Environment username/password authentication failed:", error instanceof Error ? error.message : String(error));
