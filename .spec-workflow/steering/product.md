@@ -55,7 +55,6 @@ The Jellyfin MCP Recommendation Server bridges the gap between self-hosted media
 - **Real-time Updates**: Connection testing utilities and authentication verification tools
 - **Key Metrics Displayed**: Library size, response times, authentication status, spec compliance
 - **Sharing Capabilities**: Example configurations and setup guides for easy deployment
-
 ## Recent Achievements
 
 ### Documentation Consolidation (Completed)
@@ -74,7 +73,6 @@ The Jellyfin MCP Recommendation Server bridges the gap between self-hosted media
 - **Improved Security Awareness**: Security best practices embedded contextually throughout setup workflows
 - **Streamlined Maintenance**: Single source of truth reduces documentation drift and maintenance overhead
 - **Enhanced Developer Experience**: Complete development workflow and contribution guidelines consolidated for contributors
-
 ## Future Vision
 
 Position this MCP server as the foundation for a broader ecosystem of AI-enabled media discovery tools.

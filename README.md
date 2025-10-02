@@ -260,6 +260,7 @@ export JELLYFIN_PROTOCOL="https"  # Optional: http or https (defaults to https)
 # Minimal environment setup
 export JELLYFIN_BASE_URL="http://your-jellyfin-server:8096"
 # No credentials needed - authenticate with username/password when prompted
+
 ```
 
 Then use a clean Claude config without embedded credentials:
@@ -636,7 +637,6 @@ yarn build && yarn start    # Build and run production version
 - **Jellyfin Integration** - Read-only API client with authentication
 - **Spec Validation** - Machine-readable `jellyfin-mcp.spec.yaml`
 - **Test Harness** - Automated spec acceptance testing
-
 ---
 
 ### Code Quality Standards
