@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
  * Test helper: URL Builder
- * 
+ *
  * Standalone script that builds a Jellyfin URL from environment variables.
  * Used by tests to validate URL construction logic in isolation.
- * 
+ *
  * Usage:
  *   JELLYFIN_BASE_URL=example.com JELLYFIN_PROTOCOL=https node url-builder.js
- * 
+ *
  * Output:
  *   Prints the constructed URL to stdout
  *   Exits with code 1 and error message to stderr on failure
@@ -33,7 +33,7 @@ function mustEnv(key: string): string {
 
 /**
  * Build Jellyfin URL with protocol configuration support
- * 
+ *
  * Logic:
  * 1. If base URL already has protocol (http:// or https://), use it as-is
  * 2. If JELLYFIN_PROTOCOL is set, validate and use it

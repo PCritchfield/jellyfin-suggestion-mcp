@@ -243,7 +243,7 @@ async function testProtocolConfig() {
 
 /**
  * Test URL construction by spawning the test helper module
- * 
+ *
  * Security: Uses spawn with separate helper module to avoid command injection
  * Maintainability: Helper module is properly typed and reusable across tests
  */

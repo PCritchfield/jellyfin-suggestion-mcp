@@ -23,6 +23,16 @@
         "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
     ],
-    "@semantic-release/github"
+    "@semantic-release/github",
+    [
+      "@saithodev/semantic-release-backmerge",
+      {
+        "fromBranch": "master",
+        "toBranch": "master",
+        "prTitle": "chore(release): ${nextRelease.version}",
+        "prBody": "${nextRelease.notes}",
+        "prLabel": ["release", "automated pr"]
+      }
+    ]
   ]
 }
