@@ -22,7 +22,6 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -42,8 +41,16 @@ jobs:
     - name: Run build
       run: yarn build
 
-    - name: Release
+    - name: Create Release PR
+      id: release
+      uses: google-github-actions/release-please-action@v4
+      with:
+        release-type: node
+
+    - name: Publish to NPM
+      if: ${{ steps.release.outputs.release_created }}
       env:
-        GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      run: yarn semantic-release
+      run: |
+        echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+        yarn publish --access public
