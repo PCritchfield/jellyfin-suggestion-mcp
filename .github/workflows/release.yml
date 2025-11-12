@@ -44,9 +44,11 @@ jobs:
 
     - name: Create Release PR
       id: release
-      uses: google-github-actions/release-please-action@v4
+      uses: googleapis/release-please-action@v4
       with:
-        release-type: node
+        token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+        config-file: release-please-config.json
+        manifest-file: .release-please-manifest.json
 
     - name: Publish to NPM
       if: ${{ steps.release.outputs.release_created }}
